@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.audio.AndroidAudioOutputManager
 import com.example.data.audio.OnyxMediaNotificationHelper
 import com.example.data.audio.SynthesizedAudioEngine
+import com.example.data.download.DownloadedTrackRecord
+import com.example.data.download.MusicFolderInfo
+import com.example.data.download.OnyxDownloadManager
 import com.example.data.preferences.PersistedSettings
 import com.example.data.preferences.ThemeMode
 import com.example.data.preferences.UserPreferencesRepository
@@ -87,10 +90,12 @@ data class MusicUiState(
     val activeAddToPlaylistSong: Song? = null,
     val activeReportConcernSong: Song? = null,
 
-    // Search & Library State
+    // Search, Pagination, Download & Folder System State
     val searchQuery: String = "",
     val selectedSearchCategory: String? = null,
     val isSearchingOnline: Boolean = false,
+    val currentSearchPage: Int = 1,
+    val isLoadingMoreSongs: Boolean = false,
     val searchResultAlbums: List<Album> = emptyList(),
     val searchResultSongs: List<Song> = emptyList(),
     val recentSearches: List<String> = listOf(
@@ -109,6 +114,13 @@ data class MusicUiState(
     ),
     val selectedLibraryCategory: String = "Albums",
     val librarySortOrder: LibrarySortOrder = LibrarySortOrder.RECENTLY_ADDED,
+    val downloadedTracks: List<DownloadedTrackRecord> = emptyList(),
+    val musicFolders: List<MusicFolderInfo> = emptyList(),
+    val selectedFolderFilter: String? = null,
+    val downloadingSongIds: Set<String> = emptySet(),
+    val downloadProgressMap: Map<String, Int> = emptyMap(),
+    val activeSaveToFolderSong: Song? = null,
+    val isCreateFolderModalOpen: Boolean = false,
 
     // Account & Persisted Settings State
     val userProfile: UserProfile,
@@ -125,14 +137,22 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val preferencesRepository = UserPreferencesRepository(
         runCatching { application.applicationContext.userPreferencesDataStore }.getOrNull()
     )
-    private val audioEngine = SynthesizedAudioEngine(viewModelScope, application.applicationContext)
+    private val downloadManager = OnyxDownloadManager(application.applicationContext)
+    private val audioEngine = SynthesizedAudioEngine(
+        scope = viewModelScope,
+        context = application.applicationContext,
+        offlineFileResolver = { song -> downloadManager.getDownloadedFileForSong(song) }
+    )
     private val audioOutputManager = AndroidAudioOutputManager(application.applicationContext)
     private val mediaNotificationHelper = OnyxMediaNotificationHelper(application.applicationContext)
     private var progressJob: Job? = null
     private var toastJob: Job? = null
     private var searchJob: Job? = null
 
-    private val initialSongs = catalogUseCase.getAllSongs()
+    private val initialDownloadedRecords = downloadManager.getDownloadedTracks()
+    private val initialDownloadedSongs = initialDownloadedRecords.map { downloadManager.toSong(it) }
+    private val initialSongs = (initialDownloadedSongs + catalogUseCase.getAllSongs())
+        .distinctBy { it.audioUrl ?: it.id }
     private val initialAlbums = catalogUseCase.getAllAlbums()
     private val initialPlaylists = catalogUseCase.getAllPlaylists()
     private val initialArtists = catalogUseCase.getAllArtists()
@@ -171,6 +191,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             availableAudioOutputs = initialRoutes,
             searchResultAlbums = initialAlbums,
             searchResultSongs = initialSongs,
+            downloadedTracks = initialDownloadedRecords,
+            musicFolders = downloadManager.getMusicFolders(),
             userProfile = catalogUseCase.getDefaultProfile()
         )
     )
@@ -179,6 +201,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             preferencesRepository.settingsFlow.collect { prefs ->
+                audioEngine.applyEqualizerPreset(prefs.equalizerPreset)
                 _uiState.update { state ->
                     state.copy(
                         persistedSettings = prefs,
@@ -822,8 +845,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             if (debounceMs > 0) delay(debounceMs)
-            _uiState.update { it.copy(isSearchingOnline = true) }
-            val liveSongs = OnyxSongApiService.searchSongs(query, resolveArtwork = true)
+            _uiState.update { it.copy(isSearchingOnline = true, currentSearchPage = 1) }
+            val liveSongs = OnyxSongApiService.searchSongs(query, resolveArtwork = true, page = 1, pageSize = 40)
             if (liveSongs.isNotEmpty()) {
                 val liveAlbums = OnyxSongApiService.buildAlbumsFromSongs(liveSongs, "${query.uppercase()} • LIVE")
                 _uiState.update { state ->
@@ -831,6 +854,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     val mergedAllAlbums = (state.allAlbums + liveAlbums).distinctBy { it.title.lowercase().trim() }
                     state.copy(
                         isSearchingOnline = false,
+                        currentSearchPage = 1,
                         allSongs = mergedAllSongs,
                         allAlbums = mergedAllAlbums,
                         searchResultSongs = (liveSongs + state.searchResultSongs).distinctBy { it.audioUrl ?: it.id },
@@ -841,6 +865,203 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(isSearchingOnline = false) }
             }
         }
+    }
+
+    /**
+     * Loads the next page (40 more songs per click) from the live API so the user can browse unlimited songs.
+     */
+    fun loadMoreSongsFromApi(customQuery: String? = null) {
+        if (_uiState.value.isLoadingMoreSongs) return
+        val nextPage = _uiState.value.currentSearchPage + 1
+        val query = (customQuery ?: _uiState.value.searchQuery.ifBlank {
+            _uiState.value.selectedSearchCategory ?: "Bollywood 2025"
+        }).trim()
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMoreSongs = true) }
+            val moreSongs = OnyxSongApiService.searchSongs(
+                query = query,
+                resolveArtwork = false,
+                page = nextPage,
+                pageSize = 40
+            )
+            if (moreSongs.isNotEmpty()) {
+                val moreAlbums = OnyxSongApiService.buildAlbumsFromSongs(moreSongs, "${query.uppercase()} • PAGE $nextPage")
+                _uiState.update { state ->
+                    val updatedAllSongs = (state.allSongs + moreSongs).distinctBy { it.audioUrl ?: it.id }
+                    val updatedAllAlbums = (state.allAlbums + moreAlbums).distinctBy { it.title.lowercase().trim() }
+                    val updatedSearchSongs = (state.searchResultSongs + moreSongs).distinctBy { it.audioUrl ?: it.id }
+                    val updatedSearchAlbums = (state.searchResultAlbums + moreAlbums).distinctBy { it.title.lowercase().trim() }
+                    state.copy(
+                        isLoadingMoreSongs = false,
+                        currentSearchPage = nextPage,
+                        allSongs = updatedAllSongs,
+                        allAlbums = updatedAllAlbums,
+                        searchResultSongs = updatedSearchSongs,
+                        searchResultAlbums = updatedSearchAlbums,
+                        toastMessage = "Loaded ${moreSongs.size} more songs from API (Page $nextPage)"
+                    )
+                }
+                scheduleToastClear()
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoadingMoreSongs = false,
+                        toastMessage = "All available API songs for '$query' loaded"
+                    )
+                }
+                scheduleToastClear()
+            }
+        }
+    }
+
+    /**
+     * Fetches full album tracklist from the API when opening an album detail view.
+     */
+    fun ensureAlbumTracksLoaded(album: Album) {
+        viewModelScope.launch {
+            val existingCount = _uiState.value.allSongs.count {
+                it.albumTitle.equals(album.title, ignoreCase = true)
+            }
+            if (existingCount >= 6) return@launch
+            val apiTracks = OnyxSongApiService.fetchAlbumTracksFromApi(album.title, album.artist)
+            if (apiTracks.isNotEmpty()) {
+                _uiState.update { state ->
+                    val merged = (state.allSongs + apiTracks).distinctBy { it.audioUrl ?: it.id }
+                    state.copy(allSongs = merged)
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // DOWNLOAD SYSTEM & LOCAL FOLDER MANAGEMENT ACTIONS
+    // =========================================================================
+
+    fun downloadSong(song: Song, folderName: String? = null) {
+        if (_uiState.value.downloadingSongIds.contains(song.id)) return
+        val targetFolder = folderName?.takeIf { it.isNotBlank() }
+            ?: _uiState.value.selectedFolderFilter
+            ?: downloadManager.suggestFolderForSong(song)
+
+        _uiState.update { state ->
+            state.copy(
+                activeTrackOptionsSong = null,
+                activeSaveToFolderSong = null,
+                downloadingSongIds = state.downloadingSongIds + song.id,
+                downloadProgressMap = state.downloadProgressMap + (song.id to 5),
+                toastMessage = "Downloading '${song.title}' (320kbps AAC) to '$targetFolder'..."
+            )
+        }
+        scheduleToastClear()
+
+        viewModelScope.launch {
+            val result = downloadManager.downloadSongToFolder(
+                song = song,
+                folderName = targetFolder,
+                onProgress = { pct ->
+                    _uiState.update { state ->
+                        state.copy(downloadProgressMap = state.downloadProgressMap + (song.id to pct))
+                    }
+                }
+            )
+            result.onSuccess { record ->
+                _uiState.update { state ->
+                    state.copy(
+                        downloadingSongIds = state.downloadingSongIds - song.id,
+                        downloadProgressMap = state.downloadProgressMap - song.id,
+                        savedSongIds = state.savedSongIds + song.id,
+                        downloadedTracks = downloadManager.getDownloadedTracks(),
+                        musicFolders = downloadManager.getMusicFolders(),
+                        toastMessage = "Downloaded '${song.title}' (${record.fileSizeFormatted}) in folder '${record.folderName}'"
+                    )
+                }
+                scheduleToastClear()
+            }.onFailure { err ->
+                _uiState.update { state ->
+                    state.copy(
+                        downloadingSongIds = state.downloadingSongIds - song.id,
+                        downloadProgressMap = state.downloadProgressMap - song.id,
+                        toastMessage = "Download failed: ${err.message ?: "Network error"}"
+                    )
+                }
+                scheduleToastClear()
+            }
+        }
+    }
+
+    fun deleteDownloadedSong(songId: String) {
+        val removed = downloadManager.deleteDownloadedSong(songId)
+        if (removed) {
+            _uiState.update { state ->
+                state.copy(
+                    downloadedTracks = downloadManager.getDownloadedTracks(),
+                    musicFolders = downloadManager.getMusicFolders(),
+                    toastMessage = "Removed offline download from folder"
+                )
+            }
+            scheduleToastClear()
+        }
+    }
+
+    fun createMusicFolder(folderName: String) {
+        val created = downloadManager.createFolder(folderName)
+        if (created != null) {
+            _uiState.update { state ->
+                state.copy(
+                    musicFolders = downloadManager.getMusicFolders(),
+                    selectedFolderFilter = created.name,
+                    isCreateFolderModalOpen = false,
+                    toastMessage = "Created folder '${created.name}'"
+                )
+            }
+            scheduleToastClear()
+        }
+    }
+
+    fun moveSongToFolder(song: Song, targetFolderName: String) {
+        if (downloadManager.isSongDownloaded(song.id)) {
+            val moved = downloadManager.moveSongToFolder(song.id, targetFolderName)
+            if (moved != null) {
+                _uiState.update { state ->
+                    state.copy(
+                        activeTrackOptionsSong = null,
+                        activeSaveToFolderSong = null,
+                        downloadedTracks = downloadManager.getDownloadedTracks(),
+                        musicFolders = downloadManager.getMusicFolders(),
+                        toastMessage = "Moved '${song.title}' to folder '${moved.folderName}'"
+                    )
+                }
+                scheduleToastClear()
+                return
+            }
+        }
+        // If not yet downloaded, download directly into targetFolderName
+        downloadSong(song, targetFolderName)
+    }
+
+    fun selectMusicFolder(folderName: String?) {
+        _uiState.update { state ->
+            val next = if (state.selectedFolderFilter == folderName) null else folderName
+            state.copy(selectedFolderFilter = next)
+        }
+    }
+
+    fun openSaveToFolderModal(song: Song) {
+        _uiState.update {
+            it.copy(
+                activeTrackOptionsSong = null,
+                activeSaveToFolderSong = song
+            )
+        }
+    }
+
+    fun dismissSaveToFolderModal() {
+        _uiState.update { it.copy(activeSaveToFolderSong = null) }
+    }
+
+    fun setCreateFolderModalOpen(open: Boolean) {
+        _uiState.update { it.copy(isCreateFolderModalOpen = open) }
     }
 
     fun selectLibraryCategory(category: String) {
@@ -1000,8 +1221,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setEqualizerPreset(preset: String) {
+        audioEngine.applyEqualizerPreset(preset)
         _uiState.update { it.copy(persistedSettings = it.persistedSettings.copy(equalizerPreset = preset)) }
         viewModelScope.launch { preferencesRepository.setEqualizerPreset(preset) }
+        showToast("DSP Equalizer: $preset")
     }
 
     fun setCrossfadeEnabled(enabled: Boolean) {
@@ -1086,7 +1309,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun clearCache() {
-        _uiState.update { it.copy(persistedSettings = it.persistedSettings.copy(cacheSizeMb = 0)) }
+        val freedMb = audioEngine.clearDiskCache()
+        _uiState.update {
+            it.copy(
+                persistedSettings = it.persistedSettings.copy(cacheSizeMb = 0),
+                toastMessage = if (freedMb > 0) "Cleared $freedMb MB audio preload cache" else "Audio cache cleared"
+            )
+        }
+        scheduleToastClear()
         viewModelScope.launch { preferencesRepository.clearCache() }
     }
 

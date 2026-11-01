@@ -91,6 +91,9 @@ fun SearchScreen(
     onToggleFavorite: (String) -> Unit,
     onMoreOptionsClick: (Song) -> Unit,
     isSearchingOnline: Boolean = false,
+    isLoadingMoreSongs: Boolean = false,
+    currentSearchPage: Int = 1,
+    onLoadMoreSongs: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val auraColors = LocalAuraColors.current
@@ -219,7 +222,7 @@ fun SearchScreen(
                     subtitle = if (isSearchingOnline) {
                         "Fetching live 320kbps tracks from Onyx Music API..."
                     } else {
-                        "${searchResultAlbums.size} albums • ${searchResultSongs.size} songs"
+                        "${searchResultAlbums.size} albums • ${searchResultSongs.size} songs • Page $currentSearchPage"
                     }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
@@ -250,6 +253,52 @@ fun SearchScreen(
                     onFavoriteClick = { onToggleFavorite(song.id) },
                     onMoreOptionsClick = { onMoreOptionsClick(song) }
                 )
+            }
+
+            item(key = "search_load_more_api_songs") {
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .height(50.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(ElectricBlue.copy(alpha = 0.16f))
+                        .border(0.8.dp, ElectricBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+                        .clickable(enabled = !isLoadingMoreSongs) { onLoadMoreSongs() }
+                        .testTag("search_load_more_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        if (isLoadingMoreSongs) {
+                            CircularProgressIndicator(
+                                color = ElectricBlue,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Loading more songs from API...",
+                                color = TextPrimaryWhite,
+                                fontFamily = InterFontFamily,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        } else {
+                            Text(
+                                text = "Load 40 More Songs from API (Page ${currentSearchPage + 1})",
+                                color = ElectricBlue,
+                                fontFamily = InterFontFamily,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
             }
         } else {
             item(key = "browse_categories_header") {

@@ -48,10 +48,13 @@ import androidx.compose.material.icons.filled.BluetoothAudio
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Info
@@ -1445,6 +1448,8 @@ fun SectionSeeAllScreen(
     onSongClick: (Song) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onMoreOptionsClick: (Song) -> Unit,
+    isLoadingMoreSongs: Boolean = false,
+    onLoadMoreSongs: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val sectionTitle = when (sectionKey) {
@@ -1520,6 +1525,29 @@ fun SectionSeeAllScreen(
                             onFavoriteClick = { onToggleFavorite(song.id) },
                             onMoreOptionsClick = { onMoreOptionsClick(song) }
                         )
+                    }
+                    item(key = "see_all_load_more_api") {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                                .height(48.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(ElectricBlue.copy(alpha = 0.16f))
+                                .border(0.8.dp, ElectricBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+                                .clickable(enabled = !isLoadingMoreSongs) { onLoadMoreSongs() }
+                                .testTag("see_all_load_more_button"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isLoadingMoreSongs) "Loading more songs from API..." else "Load 40 More Songs from API",
+                                color = ElectricBlue,
+                                fontFamily = InterFontFamily,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 
@@ -1607,10 +1635,13 @@ fun TrackOptionsOverlaySheet(
     song: Song,
     isLiked: Boolean,
     isSavedInLibrary: Boolean = true,
+    isDownloaded: Boolean = false,
     sleepTimerMinutes: Int? = null,
     onDismiss: () -> Unit,
     onToggleSaveLibrary: () -> Unit = {},
     onAddToPlaylist: () -> Unit = {},
+    onDownloadSong: () -> Unit = {},
+    onSaveToFolder: () -> Unit = {},
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
     onToggleFavorite: () -> Unit,
@@ -1759,6 +1790,18 @@ fun TrackOptionsOverlaySheet(
                         label = "Add to Playlist",
                         onClick = onAddToPlaylist,
                         testTag = "track_option_add_playlist"
+                    )
+                    TrackOptionActionRow(
+                        icon = if (isDownloaded) Icons.Filled.DownloadDone else Icons.Filled.Download,
+                        label = if (isDownloaded) "Downloaded Offline (320kbps AAC)" else "Download Song (320kbps AAC)",
+                        onClick = onDownloadSong,
+                        testTag = "track_option_download"
+                    )
+                    TrackOptionActionRow(
+                        icon = Icons.Filled.Folder,
+                        label = "Save to Local Folder...",
+                        onClick = onSaveToFolder,
+                        testTag = "track_option_save_folder"
                     )
                     TrackOptionActionRow(
                         icon = Icons.Filled.PlayArrow,

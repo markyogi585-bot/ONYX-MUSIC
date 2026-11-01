@@ -32,10 +32,17 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.outlined.Album
 import androidx.compose.material.icons.outlined.DownloadDone
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -44,6 +51,7 @@ import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.MicExternalOn
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,9 +74,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.data.download.DownloadedTrackRecord
+import com.example.data.download.MusicFolderInfo
 import com.example.domain.model.Album
 import com.example.domain.model.ArtistProfile
 import com.example.domain.model.LibrarySortOrder
@@ -111,6 +122,15 @@ fun LibraryScreen(
     onSongClick: (Song) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onMoreOptionsClick: (Song) -> Unit,
+    downloadedTracks: List<DownloadedTrackRecord> = emptyList(),
+    musicFolders: List<MusicFolderInfo> = emptyList(),
+    selectedFolderFilter: String? = null,
+    downloadingSongIds: Set<String> = emptySet(),
+    downloadProgressMap: Map<String, Int> = emptyMap(),
+    onSelectFolder: (String?) -> Unit = {},
+    onOpenCreateFolder: () -> Unit = {},
+    onDownloadSong: (Song) -> Unit = {},
+    onDeleteDownloadedSong: (String) -> Unit = {},
     onTransferMusicClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -342,6 +362,288 @@ fun LibraryScreen(
         }
 
         when (selectedCategory) {
+            "Downloaded" -> {
+                item(key = "lib_folders_header") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Local Music Folders",
+                                color = auraColors.textPrimary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${musicFolders.size} folders • ${downloadedTracks.size} offline 320kbps AAC tracks",
+                                color = auraColors.textSecondary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 12.5.sp
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(ElectricBlue.copy(alpha = 0.16f))
+                                .border(0.75.dp, ElectricBlue.copy(alpha = 0.55f), RoundedCornerShape(50))
+                                .clickable { onOpenCreateFolder() }
+                                .padding(horizontal = 12.dp, vertical = 7.dp)
+                                .testTag("create_folder_button"),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.CreateNewFolder,
+                                contentDescription = "New Folder",
+                                tint = ElectricBlue,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "New Folder",
+                                color = ElectricBlue,
+                                fontFamily = InterFontFamily,
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // Horizontal Folder Cards
+                item(key = "lib_folders_carousel") {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(musicFolders, key = { "folder_${it.name}" }) { folder ->
+                            val isSelected = selectedFolderFilter.equals(folder.name, ignoreCase = true)
+                            val shape = RoundedCornerShape(16.dp)
+                            Column(
+                                modifier = Modifier
+                                    .width(164.dp)
+                                    .clip(shape)
+                                    .background(
+                                        if (isSelected) ElectricBlue.copy(alpha = 0.20f) else auraColors.cardSurface
+                                    )
+                                    .border(
+                                        width = if (isSelected) 1.2.dp else 0.75.dp,
+                                        color = if (isSelected) ElectricBlue else auraColors.glassBorder,
+                                        shape = shape
+                                    )
+                                    .clickable { onSelectFolder(folder.name) }
+                                    .padding(14.dp)
+                                    .testTag("music_folder_${folder.name.lowercase().replace(" ", "_")}")
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (isSelected) Icons.Filled.FolderOpen else Icons.Filled.Folder,
+                                        contentDescription = folder.name,
+                                        tint = ElectricBlue,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                    Text(
+                                        text = folder.totalSizeFormatted,
+                                        color = auraColors.textSecondary,
+                                        fontFamily = InterFontFamily,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = folder.name,
+                                    color = auraColors.textPrimary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${folder.trackCount} downloaded songs",
+                                    color = if (isSelected) ElectricBlue else auraColors.textSecondary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+
+                val filteredRecords = if (selectedFolderFilter != null) {
+                    downloadedTracks.filter { it.folderName.equals(selectedFolderFilter, ignoreCase = true) }
+                } else {
+                    downloadedTracks
+                }
+
+                item(key = "lib_downloaded_tracks_header") {
+                    MusicSectionHeader(
+                        title = if (selectedFolderFilter != null) "Folder: $selectedFolderFilter" else "Downloaded Offline Tracks",
+                        subtitle = if (filteredRecords.isNotEmpty()) {
+                            "${filteredRecords.size} SHA-256 verified offline tracks (.m4a)"
+                        } else {
+                            "Download any song in 320kbps AAC to play 100% offline"
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                if (filteredRecords.isNotEmpty()) {
+                    items(filteredRecords, key = { "dl_rec_${it.songId}" }) { record ->
+                        val matchingSong = sortedSongs.firstOrNull { it.id == record.songId }
+                            ?: sortedSongs.firstOrNull { it.title.equals(record.title, ignoreCase = true) }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (matchingSong != null) onSongClick(matchingSong)
+                                }
+                                .padding(horizontal = 20.dp, vertical = 9.dp)
+                                .testTag("downloaded_song_row_${record.songId}"),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AsyncImage(
+                                model = record.artworkUrl ?: record.artworkRes,
+                                placeholder = painterResource(record.artworkRes),
+                                error = painterResource(record.artworkRes),
+                                contentDescription = record.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = record.title,
+                                    color = if (isPlaying && record.songId == currentPlayingSongId) ElectricBlue else auraColors.textPrimary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 15.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${record.artist} • ${record.folderName}",
+                                    color = auraColors.textSecondary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 12.5.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Filled.VerifiedUser,
+                                        contentDescription = "SHA-256 Verified",
+                                        tint = ElectricBlue,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "${record.fileSizeFormatted} • 320kbps AAC • SHA ${record.shortHash}",
+                                        color = ElectricBlue,
+                                        fontFamily = InterFontFamily,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = { onDeleteDownloadedSong(record.songId) },
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.DeleteOutline,
+                                    contentDescription = "Delete offline download",
+                                    tint = auraColors.textSecondary
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Quick 1-Tap Offline Download List from Top Catalog Songs
+                    items(sortedSongs.take(8), key = { "quick_dl_${it.id}" }) { song ->
+                        val isDownloading = downloadingSongIds.contains(song.id)
+                        val progressPct = downloadProgressMap[song.id] ?: 0
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSongClick(song) }
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AsyncImage(
+                                model = song.artworkModel,
+                                placeholder = painterResource(song.artworkRes),
+                                error = painterResource(song.artworkRes),
+                                contentDescription = song.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = song.title,
+                                    color = auraColors.textPrimary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = if (isDownloading) {
+                                        "Downloading to ${selectedFolderFilter ?: "OnyxMusic"}... $progressPct%"
+                                    } else {
+                                        "${song.artist} • Ready for 320kbps Download"
+                                    },
+                                    color = if (isDownloading) ElectricBlue else auraColors.textSecondary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 12.5.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            if (isDownloading) {
+                                CircularProgressIndicator(
+                                    color = ElectricBlue,
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            } else {
+                                IconButton(
+                                    onClick = { onDownloadSong(song) },
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .testTag("download_song_button_${song.id}")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Download,
+                                        contentDescription = "Download song to folder",
+                                        tint = ElectricBlue
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             "Songs", "Favorite Songs" -> {
                 val filteredSongs = if (selectedCategory == "Favorite Songs") {
                     sortedSongs.filter { likedSongIds.contains(it.id) }
@@ -686,6 +988,285 @@ fun CreatePlaylistModalSheet(
             )
 
             Spacer(modifier = Modifier.height(36.dp))
+        }
+    }
+}
+
+/**
+ * Modal Sheet for creating a new local music folder inside `OnyxMusic/<FolderName>`.
+ */
+@Composable
+fun CreateFolderModalSheet(
+    visible: Boolean,
+    onCreateFolder: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!visible) return
+    val auraColors = LocalAuraColors.current
+    var folderName by remember { mutableStateOf("") }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PureBlack.copy(alpha = 0.72f))
+            .clickable(onClick = onDismiss)
+            .testTag("create_folder_modal"),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(Color(0xFF1C1C1E))
+                .border(0.8.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .clickable(enabled = false) {}
+                .padding(horizontal = 24.dp, vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2C2C2E))
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Cancel",
+                        tint = auraColors.textPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Text(
+                    text = "New Music Folder",
+                    color = auraColors.textPrimary,
+                    fontFamily = InterFontFamily,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(ElectricBlue)
+                        .clickable { onCreateFolder(folderName.ifBlank { "My Offline Hits" }) }
+                        .testTag("create_folder_confirm_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = "Create Folder",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Icon(
+                imageVector = Icons.Filled.Folder,
+                contentDescription = null,
+                tint = ElectricBlue,
+                modifier = Modifier.size(64.dp)
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (folderName.isEmpty()) {
+                    Text(
+                        text = "Folder Name (e.g. Gym Beats)",
+                        color = auraColors.textSecondary.copy(alpha = 0.65f),
+                        fontFamily = InterFontFamily,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                BasicTextField(
+                    value = folderName,
+                    onValueChange = { folderName = it },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = auraColors.textPrimary,
+                        fontFamily = InterFontFamily,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    ),
+                    cursorBrush = SolidColor(ElectricBlue),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .testTag("create_folder_name_input")
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = 0.8.dp,
+                color = Color(0xFF303033)
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+        }
+    }
+}
+
+/**
+ * Modal Sheet for choosing a target Folder to download or move a Song into.
+ */
+@Composable
+fun SaveToFolderModalSheet(
+    song: Song?,
+    folders: List<MusicFolderInfo>,
+    onSelectFolder: (Song, String) -> Unit,
+    onCreateNewFolderClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (song == null) return
+    val auraColors = LocalAuraColors.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PureBlack.copy(alpha = 0.72f))
+            .clickable(onClick = onDismiss)
+            .testTag("save_to_folder_modal"),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
+                .background(Color(0xFF1C1C1E))
+                .border(0.8.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
+                .clickable(enabled = false) {}
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Save to Local Folder",
+                        color = auraColors.textPrimary,
+                        fontFamily = InterFontFamily,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${song.title} • 320kbps AAC Offline",
+                        color = ElectricBlue,
+                        fontFamily = InterFontFamily,
+                        fontSize = 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close",
+                        tint = auraColors.textSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            folders.forEach { folder ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onSelectFolder(song, folder.name) }
+                        .padding(vertical = 12.dp, horizontal = 8.dp)
+                        .testTag("save_folder_option_${folder.name.lowercase().replace(" ", "_")}"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Folder,
+                            contentDescription = folder.name,
+                            tint = ElectricBlue,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column {
+                            Text(
+                                text = folder.name,
+                                color = auraColors.textPrimary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 15.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "${folder.trackCount} tracks • ${folder.totalSizeFormatted}",
+                                color = auraColors.textSecondary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.Filled.Download,
+                        contentDescription = "Save here",
+                        tint = ElectricBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                HorizontalDivider(color = auraColors.divider, thickness = 0.5.dp)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(ElectricBlue.copy(alpha = 0.15f))
+                    .border(0.75.dp, ElectricBlue.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                    .clickable {
+                        onDismiss()
+                        onCreateNewFolderClick()
+                    }
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    tint = ElectricBlue,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Create New Folder",
+                    color = ElectricBlue,
+                    fontFamily = InterFontFamily,
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

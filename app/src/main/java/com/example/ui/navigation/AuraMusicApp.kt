@@ -58,6 +58,7 @@ import com.example.ui.components.realBackdropBlur
 import com.example.ui.screens.AccountScreen
 import com.example.ui.screens.AddToPlaylistModal
 import com.example.ui.screens.AudioOutputOverlaySheet
+import com.example.ui.screens.CreateFolderModalSheet
 import com.example.ui.screens.CreatePlaylistModalSheet
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LibraryScreen
@@ -69,6 +70,7 @@ import com.example.ui.screens.PlaylistDetailScreen
 import com.example.ui.screens.QueueScreen
 import com.example.ui.screens.RadioScreen
 import com.example.ui.screens.ReportConcernModal
+import com.example.ui.screens.SaveToFolderModalSheet
 import com.example.ui.screens.SearchScreen
 import com.example.ui.screens.SectionSeeAllScreen
 import com.example.ui.screens.SettingsScreen
@@ -310,7 +312,16 @@ fun AuraMusicApp(
                             },
                             onSongClick = { song -> musicViewModel.playSong(song) },
                             onToggleFavorite = musicViewModel::toggleFavorite,
-                            onMoreOptionsClick = musicViewModel::openTrackOptions
+                            onMoreOptionsClick = musicViewModel::openTrackOptions,
+                            downloadedTracks = uiState.downloadedTracks,
+                            musicFolders = uiState.musicFolders,
+                            selectedFolderFilter = uiState.selectedFolderFilter,
+                            downloadingSongIds = uiState.downloadingSongIds,
+                            downloadProgressMap = uiState.downloadProgressMap,
+                            onSelectFolder = musicViewModel::selectMusicFolder,
+                            onOpenCreateFolder = { musicViewModel.setCreateFolderModalOpen(true) },
+                            onDownloadSong = { song -> musicViewModel.downloadSong(song) },
+                            onDeleteDownloadedSong = musicViewModel::deleteDownloadedSong
                         )
                     }
                 }
@@ -342,7 +353,10 @@ fun AuraMusicApp(
                             onSongClick = { song -> musicViewModel.playSong(song) },
                             onToggleFavorite = musicViewModel::toggleFavorite,
                             onMoreOptionsClick = musicViewModel::openTrackOptions,
-                            isSearchingOnline = uiState.isSearchingOnline
+                            isSearchingOnline = uiState.isSearchingOnline,
+                            isLoadingMoreSongs = uiState.isLoadingMoreSongs,
+                            currentSearchPage = uiState.currentSearchPage,
+                            onLoadMoreSongs = { musicViewModel.loadMoreSongsFromApi() }
                         )
                     }
                 }
@@ -387,6 +401,9 @@ fun AuraMusicApp(
                     val albumId = entry.arguments?.getString("albumId").orEmpty()
                     val album = uiState.allAlbums.firstOrNull { it.id == albumId }
                         ?: uiState.allAlbums.first()
+                    LaunchedEffect(album.id) {
+                        musicViewModel.ensureAlbumTracksLoaded(album)
+                    }
                     val albumTracks = uiState.allSongs.filter {
                         it.albumTitle.equals(album.title, ignoreCase = true) || it.artworkRes == album.artworkRes
                     }.ifEmpty { uiState.allSongs }
@@ -437,7 +454,9 @@ fun AuraMusicApp(
                         onPlayPlaylist = { playlist -> musicViewModel.playPlaylist(playlist) },
                         onSongClick = { song -> musicViewModel.playSong(song) },
                         onToggleFavorite = musicViewModel::toggleFavorite,
-                        onMoreOptionsClick = musicViewModel::openTrackOptions
+                        onMoreOptionsClick = musicViewModel::openTrackOptions,
+                        isLoadingMoreSongs = uiState.isLoadingMoreSongs,
+                        onLoadMoreSongs = { musicViewModel.loadMoreSongsFromApi() }
                     )
                 }
 
@@ -687,10 +706,13 @@ fun AuraMusicApp(
                 song = optionsSong,
                 isLiked = uiState.likedSongIds.contains(optionsSong.id),
                 isSavedInLibrary = uiState.savedSongIds.contains(optionsSong.id),
+                isDownloaded = uiState.downloadedTracks.any { it.songId == optionsSong.id },
                 sleepTimerMinutes = uiState.sleepTimerMinutes,
                 onDismiss = musicViewModel::dismissTrackOptions,
                 onToggleSaveLibrary = { musicViewModel.toggleSaveSongToLibrary(optionsSong) },
                 onAddToPlaylist = { musicViewModel.openAddToPlaylistModal(optionsSong) },
+                onDownloadSong = { musicViewModel.downloadSong(optionsSong) },
+                onSaveToFolder = { musicViewModel.openSaveToFolderModal(optionsSong) },
                 onPlayNext = { musicViewModel.playNextInQueue(optionsSong) },
                 onAddToQueue = { musicViewModel.addToQueue(optionsSong) },
                 onToggleFavorite = { musicViewModel.toggleFavorite(optionsSong.id) },
@@ -727,6 +749,22 @@ fun AuraMusicApp(
             playlists = uiState.allPlaylists,
             onSelectPlaylist = musicViewModel::addSongToPlaylist,
             onDismiss = musicViewModel::dismissAddToPlaylistModal
+        )
+
+        // Save to Local Folder Modal
+        SaveToFolderModalSheet(
+            song = uiState.activeSaveToFolderSong,
+            folders = uiState.musicFolders,
+            onSelectFolder = { song, folderName -> musicViewModel.moveSongToFolder(song, folderName) },
+            onCreateNewFolderClick = { musicViewModel.setCreateFolderModalOpen(true) },
+            onDismiss = musicViewModel::dismissSaveToFolderModal
+        )
+
+        // Create New Music Folder Modal
+        CreateFolderModalSheet(
+            visible = uiState.isCreateFolderModalOpen,
+            onCreateFolder = musicViewModel::createMusicFolder,
+            onDismiss = { musicViewModel.setCreateFolderModalOpen(false) }
         )
 
         // Create Playlist Modal (Apple Music Library "+" Header Action)

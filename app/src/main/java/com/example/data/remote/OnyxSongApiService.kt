@@ -39,8 +39,8 @@ import kotlin.math.abs
 object OnyxSongApiService {
 
     private const val OSINT_API_URL = "https://osint-apis-hub.onrender.com/api/song?key=Titan&song="
-    private const val DIRECT_SEARCH_API_URL =
-        "https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&_marker=0&api_version=4&ctx=web6dot0&n=24&p=1&q="
+    private const val DIRECT_SEARCH_BASE_URL =
+        "https://www.jiosaavn.com/api.php?__call=search.getResults&_format=json&_marker=0&api_version=4&ctx=web6dot0"
     private const val ITUNES_SEARCH_URL = "https://itunes.apple.com/search?entity=song&limit=1&term="
     private const val DES_KEY = "38346591"
 
@@ -82,19 +82,28 @@ object OnyxSongApiService {
     )
 
     /**
-     * Searches live songs for [query] with sub-200ms speed and full 500x500 artwork + 320kbps stream URLs.
+     * Searches live songs for [query] with pagination support (`page`, `pageSize` up to 40 tracks per page)
+     * and full 500x500 artwork + 320kbps stream URLs.
      */
-    suspend fun searchSongs(query: String, resolveArtwork: Boolean = true): List<Song> = withContext(Dispatchers.IO) {
+    suspend fun searchSongs(
+        query: String,
+        resolveArtwork: Boolean = true,
+        page: Int = 1,
+        pageSize: Int = 40
+    ): List<Song> = withContext(Dispatchers.IO) {
         val cleanQuery = query.trim().ifEmpty { "Dhurandhar" }
-        val cacheKey = cleanQuery.lowercase()
+        val safePage = page.coerceAtLeast(1)
+        val cacheKey = "${cleanQuery.lowercase()}_p${safePage}_n$pageSize"
         searchCache[cacheKey]?.let { cached ->
             if (cached.isNotEmpty()) return@withContext cached
         }
 
         coroutineScope {
-            // Run fast direct search (includes 500x500 images + 24 results) and OSINT API in parallel
-            val directDeferred = async { fetchFromDirectHighSpeedApi(cleanQuery) }
-            val osintDeferred = async { fetchFromOsintApi(cleanQuery, resolveArtwork) }
+            // Run fast direct search (up to 40 results per page + 500x500 images) and OSINT API in parallel
+            val directDeferred = async { fetchFromDirectHighSpeedApi(cleanQuery, page = safePage, count = pageSize) }
+            val osintDeferred = async {
+                if (safePage == 1) fetchFromOsintApi(cleanQuery, resolveArtwork) else emptyList()
+            }
 
             val directSongs = runCatching { directDeferred.await() }.getOrDefault(emptyList())
             val osintSongs = runCatching { osintDeferred.await() }.getOrDefault(emptyList())
@@ -112,7 +121,16 @@ object OnyxSongApiService {
     }
 
     /**
-     * Fetches a rich, multi-genre 2026 catalog in parallel so the app has dozens of fresh live songs.
+     * Fetches all tracks belonging to an album or artist directly from the live API.
+     */
+    suspend fun fetchAlbumTracksFromApi(albumTitle: String, artist: String): List<Song> = withContext(Dispatchers.IO) {
+        val query = "$albumTitle $artist".trim()
+        searchSongs(query = query, resolveArtwork = false, page = 1, pageSize = 30)
+    }
+
+    /**
+     * Fetches a massive, multi-genre 2026 catalog in parallel (100+ distinct songs)
+     * so the app has all top Bollywood, Dhurandhar, Punjabi, Indipop, and Romance hits ready immediately.
      */
     suspend fun fetchTrending2026Catalog(): List<Song> = withContext(Dispatchers.IO) {
         val seedQueries = listOf(
@@ -121,11 +139,15 @@ object OnyxSongApiService {
             "arijit singh 2025",
             "stree 2",
             "bhool bhulaiyaa 3",
-            "yo yo honey singh glory"
+            "yo yo honey singh glory",
+            "diljit dosanjh 2025",
+            "vishal mishra hits",
+            "sachin jigar bollywood",
+            "pritam bollywood hits"
         )
         coroutineScope {
             seedQueries.map { q ->
-                async { runCatching { fetchFromDirectHighSpeedApi(q) }.getOrDefault(emptyList()) }
+                async { runCatching { fetchFromDirectHighSpeedApi(q, page = 1, count = 25) }.getOrDefault(emptyList()) }
             }.awaitAll()
                 .flatten()
                 .distinctBy { it.audioUrl ?: it.id }
@@ -145,7 +167,7 @@ object OnyxSongApiService {
             val parsedItems = mutableListOf<ParsedTrack>()
             for (i in 0 until resultsArray.length()) {
                 val obj = resultsArray.optJSONObject(i) ?: continue
-                val downloadUrl = obj.optString("download_url").trim()
+                val downloadUrl = obj.optString("download_url").trim().replace("http://", "https://")
                 if (downloadUrl.isBlank()) continue
 
                 val title = decodeHtmlEntities(obj.optString("title").ifBlank { "Unknown Track" })
@@ -183,12 +205,15 @@ object OnyxSongApiService {
     }
 
     /**
-     * Direct high-speed JSON resolver (<100ms response, 24 results per query, native 500x500 artwork).
+     * Direct high-speed JSON resolver (<100ms response, up to 40 results per page, native 500x500 artwork).
      */
-    private fun fetchFromDirectHighSpeedApi(query: String): List<Song> {
+    private fun fetchFromDirectHighSpeedApi(query: String, page: Int = 1, count: Int = 40): List<Song> {
         return runCatching {
             val encodedQuery = URLEncoder.encode(query, "UTF-8")
-            val rawJson = httpGet("$DIRECT_SEARCH_API_URL$encodedQuery", timeoutMs = 5000)
+            val safePage = page.coerceAtLeast(1)
+            val safeCount = count.coerceIn(10, 50)
+            val url = "$DIRECT_SEARCH_BASE_URL&n=$safeCount&p=$safePage&q=$encodedQuery"
+            val rawJson = httpGet(url, timeoutMs = 5000)
             val root = JSONObject(rawJson)
             val resultsArray = root.optJSONArray("results") ?: return emptyList()
 
@@ -221,9 +246,10 @@ object OnyxSongApiService {
 
                 val rawImage = item.optString("image").trim()
                 val highResImage = rawImage
+                    .replace("http://", "https://")
                     .replace("150x150", "500x500")
                     .replace("50x50", "500x500")
-                    .takeIf { it.startsWith("http") }
+                    .takeIf { it.startsWith("https://") }
 
                 if (highResImage != null) {
                     artworkCache["$title|$artists"] = highResImage
@@ -232,7 +258,7 @@ object OnyxSongApiService {
                 songs.add(
                     toSongModel(
                         ParsedTrack(
-                            index = i,
+                            index = (safePage - 1) * safeCount + i,
                             title = title,
                             artists = artists,
                             album = album,
