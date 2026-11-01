@@ -12,7 +12,13 @@
 /build/*
 !/build/OnyxMusic.apk
 !/build/app-debug.apk
-!/build/README.md
+!/download/
+!/download/OnyxMusic.apk
+!/download/app-debug.apk
+!/apk/
+!/apk/OnyxMusic.apk
+!/OnyxMusic.apk
+!/screenshots/
 /captures
 .externalNativeBuild
 .cxx
@@ -20,3 +26,4 @@ local.properties
 .env
 debug.keystore
 *-debug.log
+

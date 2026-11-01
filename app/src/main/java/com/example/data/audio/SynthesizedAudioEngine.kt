@@ -16,8 +16,11 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.MediaPlayer
+import android.media.PlaybackParams
 import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
+import android.media.audiofx.LoudnessEnhancer
+import android.media.audiofx.Virtualizer
 import android.os.Build
 import android.os.PowerManager
 import android.util.Log
@@ -50,7 +53,8 @@ import kotlin.math.sin
 
 /**
  * Production-Grade Hybrid Native Audio Engine with Synchronous FileDescriptor Preparation,
- * Hardware Volume Guard, Preferred Hardware Device Routing, and Full-Output Stereo Polyphonic Backup.
+ * Hardware Volume Guard, Preferred Hardware Device Routing, Hardware DSP Effects
+ * (Equalizer, BassBoost, Virtualizer, LoudnessEnhancer), and Full-Output Stereo Polyphonic Backup.
  */
 class SynthesizedAudioEngine(
     private val scope: CoroutineScope,
@@ -64,9 +68,19 @@ class SynthesizedAudioEngine(
     private var mediaPlayer: MediaPlayer? = null
     private var hardwareEqualizer: Equalizer? = null
     private var hardwareBassBoost: BassBoost? = null
+    private var hardwareVirtualizer: Virtualizer? = null
+    private var hardwareLoudnessEnhancer: LoudnessEnhancer? = null
 
     @Volatile
     private var activeEqualizerPreset: String = "Late Night"
+    @Volatile
+    private var customBassBoostPercent: Int = 65
+    @Volatile
+    private var customLoudnessPercent: Int = 50
+    @Volatile
+    private var customSurroundPercent: Int = 70
+    @Volatile
+    private var currentPlaybackSpeed: Float = 1.0f
 
     @Volatile
     private var isMediaPlayerPrepared: Boolean = false
@@ -227,6 +241,55 @@ class SynthesizedAudioEngine(
         }
     }
 
+    fun setBassBoostPercent(percent: Int) {
+        customBassBoostPercent = percent.coerceIn(0, 100)
+        runCatching {
+            val bb = hardwareBassBoost ?: return@runCatching
+            if (bb.strengthSupported) {
+                bb.setStrength((customBassBoostPercent * 10).toShort())
+            }
+        }
+    }
+
+    fun setLoudnessGainPercent(percent: Int) {
+        customLoudnessPercent = percent.coerceIn(0, 100)
+        runCatching {
+            // Map 0..100% to 0..850 mB (millibels) of hardware LoudnessEnhancer gain
+            val gainMb = (customLoudnessPercent * 8.5f).toInt()
+            hardwareLoudnessEnhancer?.setTargetGain(gainMb)
+        }
+    }
+
+    fun setSpatialSurroundPercent(percent: Int) {
+        customSurroundPercent = percent.coerceIn(0, 100)
+        runCatching {
+            val virt = hardwareVirtualizer ?: return@runCatching
+            if (virt.strengthSupported) {
+                virt.setStrength((customSurroundPercent * 10).toShort())
+            }
+        }
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        currentPlaybackSpeed = speed.coerceIn(0.5f, 2.0f)
+        val mp = mediaPlayer ?: return
+        if (!isMediaPlayerPrepared) return
+        runCatching {
+            val wasPlaying = mp.isPlaying
+            val params = PlaybackParams().setSpeed(currentPlaybackSpeed)
+            if (currentPlaybackSpeed < 0.95f) {
+                // Slowed + Reverb style warm pitch
+                params.setPitch(0.95f)
+            } else {
+                params.setPitch(1.0f)
+            }
+            mp.playbackParams = params
+            if (!wasPlaying) {
+                mp.pause()
+            }
+        }
+    }
+
     private fun attachDspToSession(sessionId: Int, presetName: String) {
         if (sessionId <= 0) return
         runCatching {
@@ -261,18 +324,27 @@ class SynthesizedAudioEngine(
 
             val bass = BassBoost(0, sessionId).apply {
                 enabled = true
-                val strength: Short = when (presetName.lowercase()) {
-                    "bass boost" -> 850
-                    "electronic" -> 650
-                    "late night" -> 450
-                    "flat" -> 0
-                    else -> 250
-                }
+                val strength: Short = (customBassBoostPercent * 10).coerceIn(0, 1000).toShort()
                 if (strengthSupported) {
                     setStrength(strength)
                 }
             }
             hardwareBassBoost = bass
+
+            val virt = Virtualizer(0, sessionId).apply {
+                enabled = true
+                val strength: Short = (customSurroundPercent * 10).coerceIn(0, 1000).toShort()
+                if (strengthSupported) {
+                    setStrength(strength)
+                }
+            }
+            hardwareVirtualizer = virt
+
+            val loudness = LoudnessEnhancer(sessionId).apply {
+                enabled = true
+                setTargetGain((customLoudnessPercent * 8.5f).toInt())
+            }
+            hardwareLoudnessEnhancer = loudness
         }
     }
 
@@ -281,6 +353,10 @@ class SynthesizedAudioEngine(
         hardwareEqualizer = null
         runCatching { hardwareBassBoost?.release() }
         hardwareBassBoost = null
+        runCatching { hardwareVirtualizer?.release() }
+        hardwareVirtualizer = null
+        runCatching { hardwareLoudnessEnhancer?.release() }
+        hardwareLoudnessEnhancer = null
     }
 
     fun clearDiskCache(): Int {

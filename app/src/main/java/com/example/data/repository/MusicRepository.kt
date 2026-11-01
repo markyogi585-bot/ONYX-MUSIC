@@ -301,7 +301,7 @@ class MusicRepository {
             ),
             composer = "Karan Aujla",
             producer = "Dharma Productions • Saregama",
-            artworkUrl = "https://c.saavncdn.com/992/Bad-Newz-Hindi-2024-20240719131507-500x500.jpg",
+            artworkUrl = "https://c.saavncdn.com/992/Bad-Newz-Hindi-2024-20250730113701-500x500.jpg",
             audioUrl = "https://aac.saavncdn.com/992/5d44da8bc1d78fb72d18b701d758fd1f_320.mp4"
         ),
         Song(

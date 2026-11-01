@@ -55,6 +55,21 @@ object OnyxSongApiService {
         R.drawable.img_album_cyber_bloom
     )
 
+    private val verifiedFallbackArtworkUrls = listOf(
+        "https://c.saavncdn.com/475/Dhurandhar-Hindi-2025-20260203083204-500x500.jpg",
+        "https://c.saavncdn.com/598/Saiyaara-Hindi-2025-20250703061754-500x500.jpg",
+        "https://c.saavncdn.com/373/Stree-2-Hindi-2024-20240828083834-500x500.jpg",
+        "https://c.saavncdn.com/173/GLORY-Hindi-2024-20250117161048-500x500.jpg",
+        "https://c.saavncdn.com/443/Bhool-Bhulaiyaa-3-Hindi-2024-20250430161035-500x500.jpg",
+        "https://c.saavncdn.com/436/Do-Patti-Hindi-2024-20250509181115-500x500.jpg",
+        "https://c.saavncdn.com/581/Dhurandhar-The-Revenge-Hindi-2026-20260409161002-500x500.jpg",
+        "https://c.saavncdn.com/695/Sky-Force-Hindi-2025-20250129103147-500x500.jpg",
+        "https://c.saavncdn.com/641/Raid-2-Hindi-2025-20250429161057-500x500.jpg",
+        "https://c.saavncdn.com/918/AUJLA-SZN-1-Punjabi-2026-20261026194125-500x500.jpg",
+        "https://c.saavncdn.com/366/Pushpa-2-The-Rule-Telugu-Telugu-2024-20241205211012-500x500.jpg",
+        "https://c.saavncdn.com/252/Laapataa-Ladies-Hindi-2024-20241104085935-500x500.jpg"
+    )
+
     private val accentPalette = listOf(
         Color(0xFF168BFF),
         Color(0xFFFF2A5F),
@@ -73,6 +88,40 @@ object OnyxSongApiService {
     private val baseFrequencies = listOf(
         220.0f, 246.94f, 261.63f, 293.66f, 329.63f, 196.0f, 277.18f, 311.13f, 233.08f, 349.23f
     )
+
+    /**
+     * Automatically classifies a playing song's emotional mood so the Home & AI Feed adapts
+     * in real time without manual clicks (e.g., playing a sad song switches feed to Sad & Heartbreak).
+     */
+    fun detectSongMoodAutomatic(song: Song): String {
+        val text = "${song.title} ${song.albumTitle} ${song.artist}".lowercase()
+        return when {
+            text.contains("sad") || text.contains("gehra") || text.contains("channa") ||
+                text.contains("raanjhan") || text.contains("bekhayali") || text.contains("sajni") ||
+                text.contains("judai") || text.contains("tadap") || text.contains("dil") ||
+                text.contains("hamari adhuri") || text.contains("agar tum") || text.contains("pachtaoge") ->
+                "Sad & Heartbreak"
+            text.contains("dhurandhar") || text.contains("aari aari") || text.contains("animal") ||
+                text.contains("pushpa") || text.contains("raid") || text.contains("mass") ||
+                text.contains("sultan") || text.contains("kgf") ->
+                "Mass & Action"
+            text.contains("aujla") || text.contains("diljit") || text.contains("shubh") ||
+                text.contains("ap dhillon") || text.contains("sidhu") || text.contains("wavy") ||
+                text.contains("g.o.a.t") || text.contains("punjabi") ->
+                "Long Drive Punjabi"
+            text.contains("aaj ki raat") || text.contains("tauba") || text.contains("bhool") ||
+                text.contains("party") || text.contains("nasha") || text.contains("peelings") ||
+                text.contains("badshah") || text.contains("honey singh") ->
+                "Desi Party"
+            text.contains("lofi") || text.contains("lo-fi") || text.contains("rain") ||
+                text.contains("unplugged") || text.contains("acoustic") ->
+                "Soulful Lo-Fi"
+            text.contains("workout") || text.contains("millionaire") || text.contains("zinda") ||
+                text.contains("chak de") || text.contains("hanumankind") ->
+                "Workout & Gym"
+            else -> "Late Night Romance"
+        }
+    }
 
     suspend fun searchSongs(
         query: String,
@@ -115,17 +164,19 @@ object OnyxSongApiService {
     suspend fun fetchTrending2026Catalog(): List<Song> = withContext(Dispatchers.IO) {
         val seedQueries = listOf(
             "shashwat sachdev dhurandhar",
+            "latest hindi songs 2025 2026",
             "karan aujla 2025",
-            "arijit singh 2025",
+            "arijit singh sad romantic hits",
             "stree 2",
             "bhool bhulaiyaa 3",
             "yo yo honey singh glory",
             "diljit dosanjh 2025",
             "vishal mishra hits",
-            "sachin jigar bollywood",
-            "pritam bollywood hits",
-            "animal ranbir kapoor songs",
-            "pushpa 2 hindi songs"
+            "telugu mass hits pushpa",
+            "tamil anirudh hits",
+            "90s bollywood evergreen hits",
+            "sad heartbreak hindi songs",
+            "happy diwali bollywood party"
         )
         coroutineScope {
             seedQueries.map { q ->
@@ -347,6 +398,10 @@ object OnyxSongApiService {
         val stableHash = abs("${item.title}_${item.artists}_${item.downloadUrl}".hashCode())
         val paletteIdx = stableHash % fallbackDrawables.size
         val fallbackRes = fallbackDrawables[paletteIdx]
+        val guaranteedArtworkUrl = item.artworkUrl
+            ?.takeIf { it.startsWith("https://") }
+            ?: artworkCache["${item.title}|${item.artists}"]?.takeIf { it.startsWith("https://") }
+            ?: verifiedFallbackArtworkUrls[stableHash % verifiedFallbackArtworkUrls.size]
         val accentColor = accentPalette[stableHash % accentPalette.size]
         val freq = baseFrequencies[stableHash % baseFrequencies.size]
 
@@ -369,7 +424,7 @@ object OnyxSongApiService {
             ),
             composer = item.artists.split(",").firstOrNull()?.trim() ?: item.artists,
             producer = "${item.album} • Onyx Lossless Master",
-            artworkUrl = item.artworkUrl,
+            artworkUrl = guaranteedArtworkUrl,
             audioUrl = item.downloadUrl
         )
     }

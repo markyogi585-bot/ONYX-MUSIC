@@ -370,7 +370,8 @@ fun AuraMusicApp(
                             onLoadMoreSongs = { musicViewModel.loadMoreSongsFromApi() },
                             isOfflineMode = uiState.isOfflineMode || uiState.offlineOnlyFilterEnabled,
                             downloadedSongsCount = uiState.downloadedTracks.size,
-                            onToggleOfflineFilter = musicViewModel::toggleOfflineOnlyFilter
+                            onToggleOfflineFilter = musicViewModel::toggleOfflineOnlyFilter,
+                            onVoiceCommand = musicViewModel::processVoiceSearchCommand
                         )
                     }
                 }
@@ -622,7 +623,7 @@ fun AuraMusicApp(
                         onCloseAccount = { navController.safeNavigateBack() },
                         onOpenEditProfile = { musicViewModel.setEditProfileModalOpen(true) },
                         onCloseEditProfile = { musicViewModel.setEditProfileModalOpen(false) },
-                        onSaveProfileEdits = musicViewModel::saveProfileEdits,
+                        onSaveProfileEdits = { name, handle -> musicViewModel.saveProfileEdits(name, handle) },
                         onCompleteProfileSetup = musicViewModel::completeProfileSetup,
                         onUpgradeFamilyClick = musicViewModel::upgradeToFamilyPlan,
                         onOpenSubModal = musicViewModel::openAccountSubModal,
@@ -639,7 +640,17 @@ fun AuraMusicApp(
                             (activityContext as? android.app.Activity)?.let { act ->
                                 musicViewModel.signInWithGoogle(act)
                             }
-                        }
+                        },
+                        isBackgroundPlaybackEnabled = uiState.isBackgroundPlaybackEnabled,
+                        onToggleBackgroundPlayback = musicViewModel::setBackgroundPlaybackEnabled,
+                        bassBoostPercent = uiState.bassBoostPercent,
+                        onUpdateBassBoost = musicViewModel::setBassBoostPercent,
+                        loudnessBoostPercent = uiState.loudnessBoostPercent,
+                        onUpdateLoudnessBoost = musicViewModel::setLoudnessBoostPercent,
+                        spatialSurroundPercent = uiState.spatialSurroundPercent,
+                        onUpdateSpatialSurround = musicViewModel::setSpatialSurroundPercent,
+                        playbackSpeed = uiState.playbackSpeed,
+                        onSelectPlaybackSpeed = musicViewModel::setPlaybackSpeed
                     )
                 }
             }

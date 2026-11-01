@@ -225,6 +225,12 @@ object GeminiMusicAiService {
     fun getCuratedMoodPreset(moodLabel: String, catalogSongs: List<Song>): AiMoodSuggestionResult {
         val lower = moodLabel.lowercase()
         val (note, queries, keywords, bpm) = when {
+            lower.contains("sad") || lower.contains("heartbreak") || lower.contains("emotional") -> Quad(
+                "Auto-Adaptive Sad & Heartbreak Feed: Soulful emotional vocals by Arijit Singh, Sachet-Parampara & Vishal Mishra.",
+                listOf("Arijit Singh Sad Songs", "Raanjhan Do Patti", "Channa Mereya", "Agar Tum Saath Ho"),
+                listOf("gehra", "raanjhan", "sajni", "saiyaara", "kesariya", "channa", "bekhayali", "agar tum", "tum hare"),
+                76
+            )
             lower.contains("mass") || lower.contains("action") || lower.contains("dhurandhar") -> Quad(
                 "High-adrenaline theater anthems, explosive rap verses, and heavy basslines.",
                 listOf("Dhurandhar", "Animal Ranbir Kapoor", "Pushpa 2", "Salaar Mass Hindi"),

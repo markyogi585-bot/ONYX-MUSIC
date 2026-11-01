@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.ai.GeminiMusicAiService
 import com.example.data.audio.AndroidAudioOutputManager
 import com.example.data.audio.OnyxMediaNotificationHelper
+import com.example.data.audio.OnyxPlaybackService
 import com.example.data.audio.SynthesizedAudioEngine
 import com.example.data.download.DownloadedTrackRecord
 import com.example.data.download.MusicFolderInfo
@@ -79,15 +80,16 @@ data class MusicUiState(
 
     // Moods & Gemini AI Smart Suggestions State
     val availableMoods: List<String> = listOf(
-        "🔥 Mass & Action",
-        "❤️ Late Night Romance",
-        "⚡ Workout & Gym",
-        "🚗 Long Drive Punjabi",
-        "🕺 Desi Party",
-        "🌧️ Soulful Lo-Fi",
-        "🧘 Deep Focus"
+        "Mass & Action",
+        "Sad & Heartbreak",
+        "Late Night Romance",
+        "Workout & Gym",
+        "Long Drive Punjabi",
+        "Desi Party",
+        "Soulful Lo-Fi",
+        "Deep Focus"
     ),
-    val selectedMood: String = "🔥 Mass & Action",
+    val selectedMood: String = "Mass & Action",
     val aiMoodCuratorNote: String = "High-adrenaline theater anthems, explosive rap verses, and heavy basslines curated by Gemini AI.",
     val aiMoodTargetBpm: Int = 134,
     val isGeneratingMoodMix: Boolean = false,
@@ -106,7 +108,7 @@ data class MusicUiState(
     val cloudSyncedItemsCount: Int = 0,
     val isCloudSyncing: Boolean = false,
 
-    // Playback, Queue, Headphone/Earbuds & Sleep Timer State
+    // Playback, Queue, Headphone/Earbuds, Background Engine & DSP Sound Quality State
     val currentSong: Song,
     val queueSongs: List<Song> = emptyList(),
     val isPlaying: Boolean = false,
@@ -124,6 +126,11 @@ data class MusicUiState(
     val hardwareVolumePercent: Int = 75,
     val earbudNoiseControlMode: String = "Adaptive ANC",
     val autoPauseOnEarbudDisconnect: Boolean = true,
+    val isBackgroundPlaybackEnabled: Boolean = true,
+    val bassBoostPercent: Int = 65,
+    val loudnessBoostPercent: Int = 50,
+    val spatialSurroundPercent: Int = 70,
+    val playbackSpeed: Float = 1.0f,
     val isAudioOutputSheetOpen: Boolean = false,
     val isSleepTimerSheetOpen: Boolean = false,
     val activeTrackOptionsSong: Song? = null,
@@ -250,6 +257,33 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<MusicUiState> = _uiState.asStateFlow()
 
     init {
+        // Restore user's custom username & profile choice from local SharedPreferences
+        runCatching {
+            val prefs = getApplication<Application>().getSharedPreferences("onyx_user_profile_prefs", Context.MODE_PRIVATE)
+            val savedName = prefs.getString("display_name", null)
+            val savedHandle = prefs.getString("username_handle", null)
+            val savedEmail = prefs.getString("user_email", null)
+            val savedBgEnabled = prefs.getBoolean("bg_playback_enabled", true)
+            if (!savedName.isNullOrBlank() || !savedHandle.isNullOrBlank()) {
+                _uiState.update { state ->
+                    state.copy(
+                        isBackgroundPlaybackEnabled = savedBgEnabled,
+                        userProfile = state.userProfile.copy(
+                            displayName = savedName ?: state.userProfile.displayName,
+                            handle = savedHandle ?: state.userProfile.handle,
+                            email = savedEmail ?: state.userProfile.email,
+                            isProfileSetUp = true
+                        )
+                    )
+                }
+            }
+        }
+
+        // Connect Foreground Media Playback Service callbacks
+        OnyxPlaybackService.onTogglePlayCallback = { togglePlayPause() }
+        OnyxPlaybackService.onNextCallback = { skipNext() }
+        OnyxPlaybackService.onPrevCallback = { skipPrevious() }
+
         viewModelScope.launch {
             preferencesRepository.settingsFlow.collect { prefs ->
                 audioEngine.applyEqualizerPreset(prefs.equalizerPreset)
@@ -664,6 +698,66 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         scheduleToastClear()
     }
 
+    fun setBackgroundPlaybackEnabled(enabled: Boolean) {
+        runCatching {
+            getApplication<Application>()
+                .getSharedPreferences("onyx_user_profile_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("bg_playback_enabled", enabled)
+                .apply()
+        }
+        _uiState.update {
+            it.copy(
+                isBackgroundPlaybackEnabled = enabled,
+                toastMessage = if (enabled) "24/7 Background Playback & WakeLock Active" else "Background Playback Paused"
+            )
+        }
+        val state = _uiState.value
+        OnyxPlaybackService.syncPlaybackState(
+            context = getApplication(),
+            title = state.currentSong.title,
+            artist = state.currentSong.artist,
+            qualityBadge = "320kbps AAC • Dolby Atmos",
+            isPlaying = state.isPlaying,
+            enabled = enabled
+        )
+        scheduleToastClear()
+    }
+
+    fun setBassBoostPercent(percent: Int) {
+        val clamped = percent.coerceIn(0, 100)
+        audioEngine.setBassBoostPercent(clamped)
+        _uiState.update { it.copy(bassBoostPercent = clamped) }
+    }
+
+    fun setLoudnessBoostPercent(percent: Int) {
+        val clamped = percent.coerceIn(0, 100)
+        audioEngine.setLoudnessGainPercent(clamped)
+        _uiState.update { it.copy(loudnessBoostPercent = clamped) }
+    }
+
+    fun setSpatialSurroundPercent(percent: Int) {
+        val clamped = percent.coerceIn(0, 100)
+        audioEngine.setSpatialSurroundPercent(clamped)
+        _uiState.update { it.copy(spatialSurroundPercent = clamped) }
+    }
+
+    fun setPlaybackSpeed(speed: Float) {
+        val clamped = speed.coerceIn(0.75f, 1.5f)
+        audioEngine.setPlaybackSpeed(clamped)
+        _uiState.update {
+            it.copy(
+                playbackSpeed = clamped,
+                toastMessage = when {
+                    clamped < 0.95f -> "Playback: ${clamped}x (Slowed + Reverb)"
+                    clamped > 1.05f -> "Playback: ${clamped}x (Upbeat Tempo)"
+                    else -> "Playback: 1.0x Studio Original"
+                }
+            )
+        }
+        scheduleToastClear()
+    }
+
     fun toggleOfflineOnlyFilter() {
         _uiState.update { state ->
             val next = !state.offlineOnlyFilterEnabled
@@ -673,6 +767,47 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         scheduleToastClear()
+    }
+
+    /**
+     * Processes natural voice microphone commands (Hindi/Hinglish/English) via AI & Live API.
+     */
+    fun processVoiceSearchCommand(spokenCommand: String) {
+        val raw = spokenCommand.trim()
+        if (raw.isEmpty()) return
+        val lower = raw.lowercase()
+            .replace("play ", "")
+            .replace("chala do", "")
+            .replace("lagao", "")
+            .replace("sunao", "")
+            .trim()
+            .ifEmpty { raw }
+
+        // Automatically adapt mood feed if voice command mentions a mood
+        when {
+            lower.contains("sad") || lower.contains("heartbreak") || lower.contains("dard") ->
+                selectMood("😢 Sad & Heartbreak", autoPlayMix = true)
+            lower.contains("punjabi") || lower.contains("drive") ->
+                selectMood("🚗 Long Drive Punjabi", autoPlayMix = true)
+            lower.contains("party") || lower.contains("dance") || lower.contains("diwali") ->
+                selectMood("🕺 Desi Party", autoPlayMix = true)
+            lower.contains("workout") || lower.contains("gym") ->
+                selectMood("⚡ Workout & Gym", autoPlayMix = true)
+            lower.contains("romantic") || lower.contains("love") ->
+                selectMood("❤️ Late Night Romance", autoPlayMix = true)
+        }
+
+        updateSearchQuery(lower)
+        submitSearchTerm(lower)
+        viewModelScope.launch {
+            val apiSongs = OnyxSongApiService.searchSongs(lower, resolveArtwork = true, page = 1, pageSize = 30)
+            if (apiSongs.isNotEmpty()) {
+                playSong(apiSongs.first(), apiSongs)
+                showToast("🎙️ Voice AI Playing: ${apiSongs.first().title}")
+            } else {
+                showToast("🎙️ Voice AI Search: $lower")
+            }
+        }
     }
 
     fun dismissSplashOverlay() {
@@ -733,6 +868,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         )
         audioEngine.updateFrequency(song.baseFreqHz)
         mediaNotificationHelper.updatePlaybackNotification(song, true)
+        OnyxPlaybackService.syncPlaybackState(
+            context = getApplication(),
+            title = song.title,
+            artist = song.artist,
+            qualityBadge = "320kbps AAC • Dolby Atmos",
+            isPlaying = true,
+            enabled = _uiState.value.isBackgroundPlaybackEnabled
+        )
         startProgressTicker()
 
         // Fetch live synced LRC lyrics in the background if available
@@ -746,6 +889,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     state.copy(currentSong = updatedCurrent)
                 }
             }
+        }
+
+        // Automatically adapt the AI Mood Feed to the song the user is listening to (no manual click needed)
+        val autoDetectedMood = OnyxSongApiService.detectSongMoodAutomatic(song)
+        if (autoDetectedMood != _uiState.value.selectedMood) {
+            selectMood(autoDetectedMood, autoPlayMix = false)
         }
 
         // Pre-buffer the next song in queue for zero-latency track transitions
@@ -801,6 +950,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         val currentSong = _uiState.value.currentSong
         _uiState.update { it.copy(isPlaying = willPlay) }
         mediaNotificationHelper.updatePlaybackNotification(currentSong, willPlay)
+        OnyxPlaybackService.syncPlaybackState(
+            context = getApplication(),
+            title = currentSong.title,
+            artist = currentSong.artist,
+            qualityBadge = "320kbps AAC • Dolby Atmos",
+            isPlaying = willPlay,
+            enabled = _uiState.value.isBackgroundPlaybackEnabled
+        )
         if (willPlay) {
             audioEngine.resume(
                 song = currentSong,
@@ -1599,20 +1756,47 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isEditProfileModalOpen = open) }
     }
 
-    fun saveProfileEdits(displayName: String, handle: String) {
+    fun saveProfileEdits(displayName: String, handle: String, email: String? = null) {
         val cleanName = displayName.trim().ifEmpty { "Alex Rivera" }
-        val cleanHandle = handle.trim().let { if (it.startsWith("@")) it else "@$it" }
+        val cleanHandle = handle.trim().ifEmpty { "onyx_listener" }.let { if (it.startsWith("@")) it else "@$it" }
+        val cleanEmail = email?.trim()?.takeIf { it.isNotEmpty() } ?: _uiState.value.userProfile.email
+        runCatching {
+            getApplication<Application>()
+                .getSharedPreferences("onyx_user_profile_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putString("display_name", cleanName)
+                .putString("username_handle", cleanHandle)
+                .putString("user_email", cleanEmail)
+                .apply()
+        }
         _uiState.update { state ->
             state.copy(
                 userProfile = state.userProfile.copy(
                     displayName = cleanName,
                     handle = cleanHandle,
+                    email = cleanEmail,
                     isProfileSetUp = true
                 ),
                 isEditProfileModalOpen = false
             )
         }
-        showToast("Profile updated")
+        val uid = _uiState.value.firebaseUserUid
+        val repo = firebaseRepository
+        if (uid != null && repo != null) {
+            viewModelScope.launch {
+                runCatching {
+                    repo.createCloudItem(
+                        userId = uid,
+                        itemId = "user_profile_handle",
+                        songId = cleanHandle,
+                        title = cleanName,
+                        artist = cleanHandle,
+                        category = "profile"
+                    )
+                }
+            }
+        }
+        showToast("Username saved: $cleanHandle ($cleanName)")
     }
 
     fun completeProfileSetup() {

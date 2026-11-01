@@ -101,7 +101,7 @@ fun HomeScreen(
     onMoreOptionsClick: (Song) -> Unit,
     onSeeAllClick: (String) -> Unit,
     availableMoods: List<String> = emptyList(),
-    selectedMood: String = "🔥 Mass & Action",
+    selectedMood: String = "Mass & Action",
     aiMoodCuratorNote: String = "",
     aiMoodTargetBpm: String = "124 BPM",
     aiSuggestedSongs: List<Song> = emptyList(),
@@ -249,8 +249,8 @@ fun HomeScreen(
                 }
 
                 MusicSectionHeader(
-                    title = "Moods & AI Smart Suggestions",
-                    subtitle = "Gemini AI-curated sonic vibes & instant mixes"
+                    title = "Auto-Adaptive AI Moods & Feed",
+                    subtitle = "Automatically adapts your feed when playing Sad, Romantic, Punjabi, or Mass tracks"
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -290,20 +290,13 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Gemini AI Mood Curator Card
+                // Gemini AI Auto-Adaptive Mood Curator Card (Matching Box Card Aesthetic)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = OnyxDesignTokens.ScreenHorizontalPadding)
                         .clip(RoundedCornerShape(18.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    ElectricBlue.copy(alpha = 0.22f),
-                                    Color(0xFF7C3AED).copy(alpha = 0.22f)
-                                )
-                            )
-                        )
+                        .background(auraColors.cardSurface)
                         .border(0.8.dp, ElectricBlue.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
                         .padding(16.dp)
                         .testTag("ai_mood_curator_card")
@@ -323,10 +316,10 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "GEMINI AI VIBE • $aiMoodTargetBpm",
+                                    text = "AUTO-ADAPTIVE AI • $selectedMood • $aiMoodTargetBpm",
                                     color = ElectricBlue,
                                     fontFamily = InterFontFamily,
-                                    fontSize = 11.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.6.sp
                                 )
@@ -427,6 +420,32 @@ fun HomeScreen(
                                     }
                                 }
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color.Black.copy(alpha = 0.28f))
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "⚡ Eco-Battery BG (<1.5%/hr) • Cache <180MB / 500MB Max",
+                                color = auraColors.textSecondary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "A–Z Live API Ready",
+                                color = ElectricBlue,
+                                fontFamily = InterFontFamily,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }

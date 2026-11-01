@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +39,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -98,9 +107,24 @@ fun SearchScreen(
     isOfflineMode: Boolean = false,
     downloadedSongsCount: Int = 0,
     onToggleOfflineFilter: () -> Unit = {},
+    onVoiceCommand: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val auraColors = LocalAuraColors.current
+    var isVoiceAssistantOpen by remember { mutableStateOf(false) }
+
+    val speechLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val spoken = matches?.firstOrNull()?.trim().orEmpty()
+            if (spoken.isNotEmpty()) {
+                isVoiceAssistantOpen = false
+                onVoiceCommand(spoken)
+            }
+        }
+    }
 
     val browseTiles = listOf(
         BrowseCategoryTile(
@@ -122,7 +146,7 @@ fun SearchScreen(
             filterKey = "Punjabi",
             artworkRes = R.drawable.img_cat_punjabi,
             gradientColor = Color(0xFFEA580C),
-            artworkUrl = "https://c.saavncdn.com/734/Champagne-Talk-Punjabi-2022-20221008011951-500x500.jpg"
+            artworkUrl = "https://c.saavncdn.com/918/AUJLA-SZN-1-Punjabi-2026-20261026194125-500x500.jpg"
         ),
         BrowseCategoryTile(
             title = "Tamil",
@@ -136,42 +160,84 @@ fun SearchScreen(
             filterKey = "Pop",
             artworkRes = R.drawable.img_cat_pop,
             gradientColor = Color(0xFFDB2777),
-            artworkUrl = "https://c.saavncdn.com/406/Dhurandhar-Title-Track-From-Dhurandhar-Hindi-2025-20251016190927-500x500.jpg"
+            artworkUrl = "https://c.saavncdn.com/475/Dhurandhar-Hindi-2025-20260203083204-500x500.jpg"
         ),
         BrowseCategoryTile(
             title = "Telugu",
             filterKey = "Telugu",
             artworkRes = R.drawable.img_cat_telugu,
             gradientColor = Color(0xFF4338CA),
-            artworkUrl = "https://c.saavncdn.com/584/Heeriye-feat-Arijit-Singh-Hindi-2023-20230925050405-500x500.jpg"
+            artworkUrl = "https://c.saavncdn.com/366/Pushpa-2-The-Rule-Telugu-Telugu-2024-20241205211012-500x500.jpg"
         ),
         BrowseCategoryTile(
             title = "Onyx Music Radio",
             filterKey = "Arijit Singh",
             artworkRes = R.drawable.img_cat_radio,
             gradientColor = Color(0xFFE11D48),
-            artworkUrl = "https://c.saavncdn.com/114/Apna-Bana-Le-From-Bhediya-Hindi-2022-20221105093003-500x500.jpg"
+            artworkUrl = "https://c.saavncdn.com/598/Saiyaara-Hindi-2025-20250703061754-500x500.jpg"
         ),
         BrowseCategoryTile(
             title = "Charts",
             filterKey = "Top 50 Bollywood",
             artworkRes = R.drawable.img_cat_charts,
             gradientColor = Color(0xFF7E22CE),
-            artworkUrl = "https://c.saavncdn.com/000/Stree-2-Hindi-2024-20240809153827-500x500.jpg"
+            artworkUrl = "https://c.saavncdn.com/373/Stree-2-Hindi-2024-20240828083834-500x500.jpg"
         ),
         BrowseCategoryTile(
             title = "Sing",
             filterKey = "Shreya Ghoshal",
             artworkRes = R.drawable.img_cat_sing,
             gradientColor = Color(0xFFF43F5E),
-            artworkUrl = "https://c.saavncdn.com/238/Satranga-From-ANIMAL-Hindi-2023-20231027131032-500x500.jpg"
+            artworkUrl = "https://c.saavncdn.com/092/ANIMAL-Hindi-2023-20260724191152-500x500.jpg"
         ),
         BrowseCategoryTile(
             title = "Spatial Audio",
             filterKey = "Dhurandhar",
             artworkRes = R.drawable.img_cat_spatial,
             gradientColor = Color(0xFF0284C7),
-            artworkUrl = "https://c.saavncdn.com/307/Gehra-Hua-From-Dhurandhar-Hindi-2025-20251127143154-500x500.jpg"
+            artworkUrl = "https://c.saavncdn.com/581/Dhurandhar-The-Revenge-Hindi-2026-20260409161002-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Sad & Heartbreak",
+            filterKey = "Arijit Singh Sad Songs",
+            artworkRes = R.drawable.img_album_emerald_pulse,
+            gradientColor = Color(0xFF6D28D9),
+            artworkUrl = "https://c.saavncdn.com/436/Do-Patti-Hindi-2024-20250509181115-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Latest 2026 Hits",
+            filterKey = "Latest Hindi Songs 2026",
+            artworkRes = R.drawable.img_album_golden_hour,
+            gradientColor = Color(0xFFD97706),
+            artworkUrl = "https://c.saavncdn.com/641/Raid-2-Hindi-2025-20250429161057-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Desi Hip-Hop",
+            filterKey = "Yo Yo Honey Singh GLORY",
+            artworkRes = R.drawable.img_album_solar_flare,
+            gradientColor = Color(0xFFB91C1C),
+            artworkUrl = "https://c.saavncdn.com/173/GLORY-Hindi-2024-20250117161048-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "90s & 2000s Retro",
+            filterKey = "90s Bollywood Evergreen",
+            artworkRes = R.drawable.img_album_cyber_bloom,
+            gradientColor = Color(0xFF0F766E),
+            artworkUrl = "https://c.saavncdn.com/252/Laapataa-Ladies-Hindi-2024-20241104085935-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Workout & Gym",
+            filterKey = "Karan Aujla Workout",
+            artworkRes = R.drawable.img_album_astral_drift,
+            gradientColor = Color(0xFF1D4ED8),
+            artworkUrl = "https://c.saavncdn.com/443/Bhool-Bhulaiyaa-3-Hindi-2024-20250430161035-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Wedding & Party DJ",
+            filterKey = "Tauba Tauba Party Hits",
+            artworkRes = R.drawable.img_album_violet_mirage,
+            gradientColor = Color(0xFFBE123C),
+            artworkUrl = "https://c.saavncdn.com/992/Bad-Newz-Hindi-2024-20250730113701-500x500.jpg"
         )
     )
 
@@ -267,16 +333,138 @@ fun SearchScreen(
                             )
                         }
                     } else {
-                        Icon(
-                            imageVector = Icons.Filled.Mic,
-                            contentDescription = "Voice search",
-                            tint = auraColors.textSecondary,
-                            modifier = Modifier.size(20.dp)
+                        IconButton(
+                            onClick = {
+                                isVoiceAssistantOpen = !isVoiceAssistantOpen
+                                runCatching {
+                                    val speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                        putExtra(
+                                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                        )
+                                        putExtra(
+                                            RecognizerIntent.EXTRA_PROMPT,
+                                            "Speak a song, artist, or mood (e.g. 'Sad Arijit Singh songs')"
+                                        )
+                                    }
+                                    speechLauncher.launch(speechIntent)
+                                }
+                            },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .testTag("search_voice_mic_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Mic,
+                                contentDescription = "Voice AI search",
+                                tint = if (isVoiceAssistantOpen) ElectricBlue else auraColors.textSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (isVoiceAssistantOpen) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(auraColors.cardSurface)
+                        .border(0.8.dp, ElectricBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+                        .padding(14.dp)
+                        .testTag("voice_ai_assistant_panel")
+                ) {
+                    Text(
+                        text = "GEMINI VOICE AI ASSISTANT • SPEAK OR SELECT A VOICE COMMAND",
+                        color = ElectricBlue,
+                        fontFamily = InterFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.6.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Say any song, artist, or mood — AI will stream the track and auto-adapt your feed:",
+                        color = auraColors.textSecondary,
+                        fontFamily = InterFontFamily,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val sampleCommands = listOf(
+                            "Play Sad Arijit Singh Songs",
+                            "Play Dhurandhar Title Track",
+                            "Happy Diwali Bollywood Party",
+                            "Punjabi Highway Bass Karan Aujla",
+                            "Telugu Mass Pushpa 2 Songs"
+                        )
+                        items(sampleCommands, key = { it }) { cmd ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(ElectricBlue.copy(alpha = 0.16f))
+                                    .border(0.6.dp, ElectricBlue.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+                                    .clickable {
+                                        isVoiceAssistantOpen = false
+                                        onVoiceCommand(cmd)
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "\"$cmd\"",
+                                    color = TextPrimaryWhite,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // A-Z All Songs & Latest 2026 Live API Quick Index Bar
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.testTag("az_song_index_bar")
+            ) {
+                val azItems = listOf("Latest 2026", "Sad Hits", "Diwali") + ('A'..'Z').map { it.toString() }
+                items(azItems, key = { "az_$it" }) { itemLabel ->
+                    val queryForLabel = when (itemLabel) {
+                        "Latest 2026" -> "Latest Hindi Songs 2026"
+                        "Sad Hits" -> "Sad Heartbreak Hindi Songs"
+                        "Diwali" -> "Happy Diwali Bollywood"
+                        else -> "$itemLabel Bollywood Hits"
+                    }
+                    val isSelected = selectedCategory == queryForLabel
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSelected) ElectricBlue else auraColors.cardSurface)
+                            .border(
+                                0.7.dp,
+                                if (isSelected) ElectricBlue else auraColors.glassBorder.copy(alpha = 0.4f),
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable { onCategoryClick(queryForLabel) }
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                    ) {
+                        Text(
+                            text = itemLabel,
+                            color = if (isSelected) Color.White else auraColors.textPrimary,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
         if (searchQuery.isNotBlank() || selectedCategory != null) {

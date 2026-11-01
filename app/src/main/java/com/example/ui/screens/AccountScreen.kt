@@ -82,9 +82,21 @@ fun AccountScreen(
     firebaseUserEmail: String? = null,
     cloudSyncedItemsCount: Int = 0,
     onGoogleSignInClick: () -> Unit = {},
+    isBackgroundPlaybackEnabled: Boolean = true,
+    onToggleBackgroundPlayback: (Boolean) -> Unit = {},
+    bassBoostPercent: Int = 65,
+    onUpdateBassBoost: (Int) -> Unit = {},
+    loudnessBoostPercent: Int = 50,
+    onUpdateLoudnessBoost: (Int) -> Unit = {},
+    spatialSurroundPercent: Int = 70,
+    onUpdateSpatialSurround: (Int) -> Unit = {},
+    playbackSpeed: Float = 1.0f,
+    onSelectPlaybackSpeed: (Float) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val auraColors = LocalAuraColors.current
+    var quickDisplayName by remember(userProfile.displayName) { mutableStateOf(userProfile.displayName) }
+    var quickUsernameHandle by remember(userProfile.handle) { mutableStateOf(userProfile.handle) }
 
     Box(
         modifier = modifier
@@ -137,7 +149,260 @@ fun AccountScreen(
                     )
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Firebase Cloud Sync & Google Sign-In Card
+                    // USER'S CHOICE: CUSTOM USERNAME SYSTEM & OPTIONAL CLOUD AUTH
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(auraColors.cardSurface)
+                            .padding(16.dp)
+                            .testTag("custom_username_auth_card")
+                    ) {
+                        Text(
+                            text = "USER'S CHOICE AUTH • CUSTOM USERNAME SYSTEM",
+                            color = ElectricBlue,
+                            fontFamily = InterFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.7.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Active Handle: ${userProfile.handle} (${userProfile.displayName})",
+                            color = auraColors.textPrimary,
+                            fontFamily = InterFontFamily,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Choose any custom @username locally (no login required), or optionally link Google Cloud below.",
+                            color = auraColors.textSecondary,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = quickDisplayName,
+                            onValueChange = { quickDisplayName = it },
+                            label = { Text("Your Display Name", fontFamily = InterFontFamily) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = auraColors.textPrimary,
+                                unfocusedTextColor = auraColors.textPrimary,
+                                focusedBorderColor = ElectricBlue,
+                                unfocusedBorderColor = auraColors.glassBorder,
+                                focusedLabelColor = ElectricBlue,
+                                unfocusedLabelColor = auraColors.textSecondary
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("custom_display_name_input")
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = quickUsernameHandle,
+                            onValueChange = { quickUsernameHandle = it },
+                            label = { Text("Custom @Username Handle", fontFamily = InterFontFamily) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = auraColors.textPrimary,
+                                unfocusedTextColor = auraColors.textPrimary,
+                                focusedBorderColor = ElectricBlue,
+                                unfocusedBorderColor = auraColors.glassBorder,
+                                focusedLabelColor = ElectricBlue,
+                                unfocusedLabelColor = auraColors.textSecondary
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("custom_username_handle_input")
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf("@dhurandhar_vip", "@desi_audiophile", "@punjabi_king").forEach { tag ->
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(ElectricBlue.copy(alpha = 0.14f))
+                                        .clickable {
+                                            quickUsernameHandle = tag
+                                            onSaveProfileEdits(quickDisplayName, tag)
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        color = ElectricBlue,
+                                        fontFamily = InterFontFamily,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = { onSaveProfileEdits(quickDisplayName, quickUsernameHandle) },
+                            colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                                .testTag("save_custom_username_button")
+                        ) {
+                            Text(
+                                text = "Save Custom Username (${if (quickUsernameHandle.startsWith("@")) quickUsernameHandle else "@$quickUsernameHandle"})",
+                                color = Color.White,
+                                fontFamily = InterFontFamily,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 24/7 BACKGROUND RUNNING & HI-RES DSP SOUND QUALITY STUDIO CARD
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(auraColors.cardSurface)
+                            .padding(16.dp)
+                            .testTag("background_sound_engine_card")
+                    ) {
+                        Text(
+                            text = "24/7 BACKGROUND ENGINE & HI-RES SOUND STUDIO",
+                            color = ElectricBlue,
+                            fontFamily = InterFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.7.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Background Playback & Screen-Off WakeLock",
+                                    color = auraColors.textPrimary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 14.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = if (isBackgroundPlaybackEnabled) {
+                                        "Active: Music continues when app is minimized or screen is locked"
+                                    } else {
+                                        "Disabled: Playback stops when app closes"
+                                    },
+                                    color = auraColors.textSecondary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            Switch(
+                                checked = isBackgroundPlaybackEnabled,
+                                onCheckedChange = onToggleBackgroundPlayback,
+                                colors = SwitchDefaults.colors(checkedTrackColor = ElectricBlue),
+                                modifier = Modifier.testTag("bg_playback_switch")
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Subwoofer Bass Boost ($bassBoostPercent%) • Loudness Clarity ($loudnessBoostPercent%) • 3D Spatial ($spatialSurroundPercent%)",
+                            color = auraColors.textPrimary,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(
+                                "Studio Flat" to Triple(25, 25, 30),
+                                "Dhol Bass Boost" to Triple(90, 75, 80),
+                                "Dolby 3D Max" to Triple(75, 85, 100)
+                            ).forEach { (label, triple) ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (bassBoostPercent == triple.first) ElectricBlue
+                                            else auraColors.elevatedSurface
+                                        )
+                                        .clickable {
+                                            onUpdateBassBoost(triple.first)
+                                            onUpdateLoudnessBoost(triple.second)
+                                            onUpdateSpatialSurround(triple.third)
+                                        }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = if (bassBoostPercent == triple.first) Color.White else auraColors.textPrimary,
+                                        fontFamily = InterFontFamily,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Playback Speed & Pitch Mode (${playbackSpeed}x)",
+                            color = auraColors.textSecondary,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(
+                                0.85f to "0.85x Slowed",
+                                1.0f to "1.0x Original",
+                                1.15f to "1.15x Upbeat",
+                                1.25f to "1.25x Nightcore"
+                            ).forEach { (spd, label) ->
+                                val selected = kotlin.math.abs(playbackSpeed - spd) < 0.03f
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (selected) ElectricBlue else auraColors.elevatedSurface)
+                                        .clickable { onSelectPlaybackSpeed(spd) }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        color = if (selected) Color.White else auraColors.textPrimary,
+                                        fontFamily = InterFontFamily,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Firebase Cloud Sync & Optional Google Sign-In Card
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -153,7 +418,7 @@ fun AccountScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "FIREBASE CLOUD SYNC",
+                                    text = "OPTIONAL FIREBASE CLOUD SYNC",
                                     color = ElectricBlue,
                                     fontFamily = InterFontFamily,
                                     fontSize = 11.sp,
@@ -165,7 +430,7 @@ fun AccountScreen(
                                     text = if (firebaseUserEmail != null) {
                                         "Connected: $firebaseUserEmail"
                                     } else {
-                                        "Sync Favourites, AI Moods & Playlists"
+                                        "Optional Google Backup (User's Choice)"
                                     },
                                     color = auraColors.textPrimary,
                                     fontFamily = InterFontFamily,
@@ -177,7 +442,7 @@ fun AccountScreen(
                                     text = if (firebaseUserEmail != null) {
                                         "$cloudSyncedItemsCount items backed up in Cloud Firestore"
                                     } else {
-                                        "Sign in with Google to back up your library across devices"
+                                        "Your @username works offline & online automatically. Connect Google only if you want cloud backup."
                                     },
                                     color = auraColors.textSecondary,
                                     fontFamily = InterFontFamily,
@@ -197,10 +462,10 @@ fun AccountScreen(
                                     .testTag("google_sign_in_button")
                             ) {
                                 Text(
-                                    text = "Sign in with Google (Cloud Sync)",
+                                    text = "Connect Google Account (Optional Cloud Sync)",
                                     color = Color.White,
                                     fontFamily = InterFontFamily,
-                                    fontSize = 14.5.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }

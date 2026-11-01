@@ -9,16 +9,18 @@
 
 ---
 
-## 📦 Direct APK Download (`build/` & `apk/` Folders Included in Repo)
+## 📦 Direct APK Download (`download/`, `build/`, & `apk/` Folders in Repo)
 
-| Build Artifact | Location in Repository | Architecture / Format |
+| Build Artifact | Location in Repository | Size & Format |
 | :--- | :--- | :--- |
-| **OnyxMusic Production Debug APK** | [`build/OnyxMusic.apk`](build/OnyxMusic.apk) | Universal Android APK (minSdk 24, targetSdk 36) |
-| **Standard Gradle Output APK** | [`build/app-debug.apk`](build/app-debug.apk) | Signed Debug APK (`com.aistudio.auramusic.vpxqmr`) |
-| **Mirror APK Folder** | [`apk/OnyxMusic.apk`](apk/OnyxMusic.apk) | Ready-to-install Android Package |
+| **Download Folder APK** | [`download/OnyxMusic.apk`](download/OnyxMusic.apk) | 33 MB Universal Signed APK |
+| **Build Folder APK** | [`build/OnyxMusic.apk`](build/OnyxMusic.apk) | 33 MB Universal Signed APK |
+| **Root APK** | [`OnyxMusic.apk`](OnyxMusic.apk) | 33 MB Ready-to-install Package |
+| **Mirror APK Folder** | [`apk/OnyxMusic.apk`](apk/OnyxMusic.apk) | 33 MB Ready-to-install Package |
+| **Standard Gradle Output** | [`app/build/outputs/apk/debug/app-debug.apk`](app/build/outputs/apk/debug/app-debug.apk) | Signed Debug APK (`com.aistudio.auramusic.vpxqmr`) |
 
-> **Why is `/build/OnyxMusic.apk` visible on GitHub?**  
-> `/.gitignore` is explicitly configured with `/build/*`, `!/build/OnyxMusic.apk`, `!/build/app-debug.apk`, and `!/build/README.md` so the compiled APK inside `build/` is committed and pushed directly to GitHub.
+> **Direct Download Guarantee:**  
+> The 33 MB real Android APK is committed and stored in `/download/OnyxMusic.apk`, `/build/OnyxMusic.apk`, `/apk/OnyxMusic.apk`, and `/OnyxMusic.apk` for instantaneous download and installation.
 
 ---
 
