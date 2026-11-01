@@ -131,8 +131,8 @@ fun FrostedGlassContainer(
             .shadow(
                 elevation = elevation,
                 shape = shape,
-                ambientColor = if (auraColors.isDark) PureBlack else Color.Black.copy(alpha = 0.18f),
-                spotColor = if (auraColors.isDark) PureBlack else Color.Black.copy(alpha = 0.22f)
+                ambientColor = if (auraColors.isDark) PureBlack else Color.Black.copy(alpha = 0.14f),
+                spotColor = if (auraColors.isDark) PureBlack else Color.Black.copy(alpha = 0.18f)
             )
             .clip(shape)
             .background(brush = glassFillBrush)
@@ -144,30 +144,12 @@ fun FrostedGlassContainer(
                             Color.Transparent
                         ),
                         startY = 0f,
-                        endY = size.height * 0.45f
+                        endY = size.height * 0.42f
                     )
                 )
             }
             .border(width = borderWidth, brush = specularBorderBrush, shape = shape)
     ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .realBackdropBlur(34f)
-        ) {
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        accentGlowColor.copy(alpha = if (auraColors.isDark) 0.15f else 0.08f),
-                        Color.Transparent
-                    ),
-                    center = Offset(size.width * 0.25f, size.height * 0.5f),
-                    radius = size.width * 0.55f
-                ),
-                center = Offset(size.width * 0.25f, size.height * 0.5f),
-                radius = size.width * 0.55f
-            )
-        }
         content()
     }
 }

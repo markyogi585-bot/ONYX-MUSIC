@@ -310,7 +310,7 @@ class OnyxMediaNotificationHelper(private val context: Context) {
             val statusLabel = if (isPlaying) "Playing • Dolby Atmos Lossless" else "Paused • ${song.albumTitle}"
 
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.drawable.ic_launcher_monochrome)
                 .setContentTitle(song.title)
                 .setContentText("${song.artist} — ${song.albumTitle}")
                 .setSubText(statusLabel)

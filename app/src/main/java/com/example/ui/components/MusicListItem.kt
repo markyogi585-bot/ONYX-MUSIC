@@ -78,7 +78,7 @@ fun MusicListItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(60.dp)
                     .clip(thumbShape)
                     .background(auraColors.cardSurface)
                     .border(0.6.dp, auraColors.glassBorder.copy(alpha = 0.35f), thumbShape),
@@ -111,10 +111,11 @@ fun MusicListItem(
                         text = song.title,
                         color = if (isCurrentlyPlaying) ElectricBlue else auraColors.textPrimary,
                         fontFamily = InterFontFamily,
-                        fontSize = 15.5.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        letterSpacing = (-0.2).sp,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     if (song.isExplicit) {
@@ -136,12 +137,12 @@ fun MusicListItem(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = "${song.artist} • ${song.albumTitle}",
                     color = auraColors.textSecondary,
                     fontFamily = InterFontFamily,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -165,22 +166,22 @@ fun MusicListItem(
             IconButton(
                 onClick = { onMoreOptionsClick?.invoke() ?: onSongClick() },
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .testTag("more_options_${song.id}")
             ) {
                 Icon(
                     imageVector = Icons.Filled.MoreHoriz,
                     contentDescription = "Track options",
                     tint = auraColors.textSecondary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
 
         if (showDivider) {
             HorizontalDivider(
-                modifier = Modifier.padding(start = 66.dp),
-                thickness = 0.5.dp,
+                modifier = Modifier.padding(start = 74.dp),
+                thickness = 0.6.dp,
                 color = auraColors.divider
             )
         }

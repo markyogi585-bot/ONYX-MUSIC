@@ -111,6 +111,7 @@ data class MusicUiState(
     val userProfile: UserProfile,
     val persistedSettings: PersistedSettings = PersistedSettings(),
     val isEditProfileModalOpen: Boolean = false,
+    val isCreatePlaylistModalOpen: Boolean = false,
     val activeAccountSubModal: String? = null,
     val toastMessage: String? = null
 )
@@ -703,6 +704,37 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 librarySortOrder = order,
                 toastMessage = "Sorted by ${order.label}"
+            )
+        }
+        scheduleToastClear()
+    }
+
+    fun setCreatePlaylistModalOpen(open: Boolean) {
+        _uiState.update { it.copy(isCreatePlaylistModalOpen = open) }
+    }
+
+    fun createCustomPlaylist(title: String) {
+        val cleanTitle = title.trim().ifEmpty { "My Onyx Mix" }
+        val newId = "pl_custom_${System.currentTimeMillis()}"
+        val sampleArtwork = _uiState.value.allAlbums.firstOrNull()?.artworkRes ?: 0
+        val newPlaylist = Playlist(
+            id = newId,
+            title = cleanTitle,
+            curator = _uiState.value.userProfile.displayName,
+            updatedLabel = "Updated Just Now",
+            description = "Custom personal playlist created in Onyx Music.",
+            artworkRes = sampleArtwork,
+            primaryColor = com.example.ui.theme.ElectricBlue,
+            secondaryColor = com.example.ui.theme.AmbientViolet,
+            songIds = _uiState.value.allSongs.take(5).map { it.id }
+        )
+        _uiState.update { state ->
+            state.copy(
+                allPlaylists = listOf(newPlaylist) + state.allPlaylists,
+                savedPlaylistIds = state.savedPlaylistIds + newId,
+                selectedLibraryCategory = "Playlists",
+                isCreatePlaylistModalOpen = false,
+                toastMessage = "Created playlist '$cleanTitle'"
             )
         }
         scheduleToastClear()

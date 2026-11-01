@@ -56,16 +56,16 @@ fun MusicSectionHeader(
                     text = title,
                     color = auraColors.textPrimary,
                     fontFamily = InterFontFamily,
-                    fontSize = 21.sp,
+                    fontSize = 23.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.4).sp
+                    letterSpacing = (-0.45).sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
                     tint = auraColors.textSecondary,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
 

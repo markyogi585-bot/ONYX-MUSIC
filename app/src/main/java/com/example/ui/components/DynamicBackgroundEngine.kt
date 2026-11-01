@@ -275,76 +275,52 @@ fun OnyxDynamicBackground(
         auraColors.isDark
     ) {
         if (!auraColors.isDark && !isArtworkImmersiveScreen) {
-            val tint = when (screenType) {
-                ScreenBackgroundType.NEW -> Color(0xFFEAF2FF)
-                ScreenBackgroundType.RADIO -> Color(0xFFF2EEFF)
-                else -> auraColors.background
-            }
-            listOf(tint, auraColors.background, auraColors.background, extractedPalette.dominant.copy(alpha = 0.06f))
+            listOf(
+                auraColors.background,
+                auraColors.background,
+                auraColors.background,
+                Color.Transparent
+            )
         } else {
             when (screenType) {
-                ScreenBackgroundType.HOME -> listOf(
-                    Color(0xFF0A0B10),
-                    Color(0xFF040406),
-                    PureBlack,
-                    extractedPalette.dominant.copy(alpha = 0.14f)
-                )
-
-                ScreenBackgroundType.NEW -> listOf(
-                    Color(0xFF07132C),
-                    Color(0xFF030814),
-                    PureBlack,
-                    Color(0xFF0A84FF).copy(alpha = 0.20f)
-                )
-
-                ScreenBackgroundType.RADIO -> listOf(
-                    Color(0xFF140B29),
-                    Color(0xFF060A1C),
-                    PureBlack,
-                    Color(0xFF6366F1).copy(alpha = 0.20f)
-                )
-
-                ScreenBackgroundType.LIBRARY -> listOf(
-                    Color(0xFF090B12),
-                    Color(0xFF040508),
-                    PureBlack,
-                    Color(0xFF0A84FF).copy(alpha = 0.12f)
-                )
-
+                ScreenBackgroundType.HOME,
+                ScreenBackgroundType.NEW,
+                ScreenBackgroundType.RADIO,
+                ScreenBackgroundType.LIBRARY,
                 ScreenBackgroundType.SEARCH -> listOf(
-                    Color(0xFF0C0C10),
-                    Color(0xFF050507),
                     PureBlack,
-                    Color(0xFF27272A).copy(alpha = 0.14f)
+                    PureBlack,
+                    PureBlack,
+                    Color.Transparent
                 )
 
                 ScreenBackgroundType.PLAYLIST_DETAIL,
                 ScreenBackgroundType.ALBUM_DETAIL -> listOf(
-                    extractedPalette.dominant.copy(alpha = 0.74f),
-                    extractedPalette.secondary.copy(alpha = 0.45f),
-                    Color(0xFF060609),
+                    extractedPalette.dominant.copy(alpha = 0.76f),
+                    extractedPalette.secondary.copy(alpha = 0.48f),
+                    Color(0xFF050508),
                     extractedPalette.dominant.copy(alpha = 0.48f)
                 )
 
                 ScreenBackgroundType.NOW_PLAYING -> listOf(
-                    extractedPalette.dominant.copy(alpha = 0.84f),
-                    extractedPalette.secondary.copy(alpha = 0.62f),
+                    extractedPalette.dominant.copy(alpha = 0.86f),
+                    extractedPalette.secondary.copy(alpha = 0.64f),
                     extractedPalette.deepShadow,
-                    extractedPalette.dominant.copy(alpha = 0.60f)
+                    extractedPalette.dominant.copy(alpha = 0.62f)
                 )
 
                 ScreenBackgroundType.LYRICS -> listOf(
-                    extractedPalette.dominant.copy(alpha = 0.80f),
-                    extractedPalette.secondary.copy(alpha = 0.56f),
+                    extractedPalette.dominant.copy(alpha = 0.82f),
+                    extractedPalette.secondary.copy(alpha = 0.58f),
                     extractedPalette.deepShadow,
-                    extractedPalette.dominant.copy(alpha = 0.52f)
+                    extractedPalette.dominant.copy(alpha = 0.54f)
                 )
 
                 ScreenBackgroundType.QUEUE -> listOf(
-                    extractedPalette.dominant.copy(alpha = 0.52f),
+                    extractedPalette.dominant.copy(alpha = 0.54f),
                     extractedPalette.deepShadow,
                     PureBlack,
-                    extractedPalette.secondary.copy(alpha = 0.35f)
+                    extractedPalette.secondary.copy(alpha = 0.36f)
                 )
 
                 ScreenBackgroundType.SETTINGS_OR_ACCOUNT -> listOf(
@@ -357,10 +333,10 @@ fun OnyxDynamicBackground(
         }
     }
 
-    val animTop by animateColorAsState(targetTop, tween(600), label = "bg_top")
-    val animMid by animateColorAsState(targetMid, tween(600), label = "bg_mid")
-    val animBottom by animateColorAsState(targetBottom, tween(600), label = "bg_bottom")
-    val animOrb by animateColorAsState(targetOrb, tween(600), label = "bg_orb")
+    val animTop by animateColorAsState(targetTop, tween(550), label = "bg_top")
+    val animMid by animateColorAsState(targetMid, tween(550), label = "bg_mid")
+    val animBottom by animateColorAsState(targetBottom, tween(550), label = "bg_bottom")
+    val animOrb by animateColorAsState(targetOrb, tween(550), label = "bg_orb")
 
     Box(
         modifier = modifier
@@ -371,14 +347,14 @@ fun OnyxDynamicBackground(
         if (isArtworkImmersiveScreen && artworkRes != 0) {
             val artworkLayerAlpha = when (screenType) {
                 ScreenBackgroundType.NOW_PLAYING,
-                ScreenBackgroundType.LYRICS -> 0.56f
+                ScreenBackgroundType.LYRICS -> 0.58f
                 ScreenBackgroundType.ALBUM_DETAIL,
-                ScreenBackgroundType.PLAYLIST_DETAIL -> 0.40f
-                else -> 0.30f
+                ScreenBackgroundType.PLAYLIST_DETAIL -> 0.42f
+                else -> 0.32f
             }
             Crossfade(
                 targetState = artworkRes,
-                animationSpec = tween(600),
+                animationSpec = tween(550),
                 label = "blurred_artwork_backdrop"
             ) { resId ->
                 if (resId != 0) {
@@ -399,35 +375,35 @@ fun OnyxDynamicBackground(
             }
         }
 
-        // 2. Smoothly animated extracted-color gradient mesh
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(animTop, animMid, animBottom)
+        // 2. Smoothly animated extracted-color gradient mesh (only active on artwork-dependent screens)
+        if (isArtworkImmersiveScreen) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(animTop, animMid, animBottom)
+                    )
                 )
-            )
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(animOrb, Color.Transparent),
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(animOrb, Color.Transparent),
+                        center = Offset(size.width * 0.78f, size.height * 0.18f),
+                        radius = size.width * 0.88f
+                    ),
                     center = Offset(size.width * 0.78f, size.height * 0.18f),
                     radius = size.width * 0.88f
-                ),
-                center = Offset(size.width * 0.78f, size.height * 0.18f),
-                radius = size.width * 0.88f
-            )
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(animOrb.copy(alpha = animOrb.alpha * 0.65f), Color.Transparent),
+                )
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(animOrb.copy(alpha = animOrb.alpha * 0.65f), Color.Transparent),
+                        center = Offset(size.width * 0.22f, size.height * 0.74f),
+                        radius = size.width * 0.78f
+                    ),
                     center = Offset(size.width * 0.22f, size.height * 0.74f),
                     radius = size.width * 0.78f
-                ),
-                center = Offset(size.width * 0.22f, size.height * 0.74f),
-                radius = size.width * 0.78f
-            )
-        }
+                )
+            }
 
-        // 3. Dark readability overlay for full-screen artwork pages
-        if (isArtworkImmersiveScreen) {
+            // 3. Dark readability overlay for full-screen artwork pages
             val scrimColors = when (screenType) {
                 ScreenBackgroundType.NOW_PLAYING,
                 ScreenBackgroundType.LYRICS -> listOf(

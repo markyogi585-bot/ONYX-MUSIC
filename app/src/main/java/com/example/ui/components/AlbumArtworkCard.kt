@@ -210,8 +210,9 @@ fun AlbumArtworkCard(
 }
 
 /**
- * Large 284.dp Editorial Feature / Top Picks Hero Card with category badge, title, artist,
- * 1:1 high-res artwork, and translucent bottom glass description bar.
+ * Editorial Feature / Top Picks Hero Card with full-bleed high-resolution artwork
+ * and a smooth bottom-to-top gradient overlay displaying category/curator,
+ * bold headline, artist/year subtitle, and quick play button inside the bottom panel.
  */
 @Composable
 fun FeaturedAlbumHeroCard(
@@ -230,13 +231,23 @@ fun FeaturedAlbumHeroCard(
     )
     val cardShape = RoundedCornerShape(OnyxDesignTokens.HeroCardCornerRadius)
 
-    Column(
+    Box(
         modifier = modifier
             .width(OnyxDesignTokens.EditorialHeroCardWidth)
+            .height(OnyxDesignTokens.EditorialHeroCardHeight)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
+            .shadow(
+                elevation = if (auraColors.isDark) 18.dp else 10.dp,
+                shape = cardShape,
+                ambientColor = album.primaryColor.copy(alpha = 0.35f),
+                spotColor = PureBlack.copy(alpha = 0.5f)
+            )
+            .clip(cardShape)
+            .background(auraColors.cardSurface)
+            .border(0.75.dp, Color.White.copy(alpha = 0.12f), cardShape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -244,106 +255,125 @@ fun FeaturedAlbumHeroCard(
             )
             .testTag("featured_hero_card_${album.id}")
     ) {
-        Text(
-            text = album.badgeText ?: album.categoryTag,
-            color = ElectricBlue,
-            fontFamily = InterFontFamily,
-            fontSize = 10.5.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.7.sp,
-            maxLines = 1
-        )
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = album.title,
-            color = auraColors.textPrimary,
-            fontFamily = InterFontFamily,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = (-0.4).sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = album.artist,
-            color = auraColors.textSecondary,
-            fontFamily = InterFontFamily,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Normal,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+        AsyncImage(
+            model = album.artworkRes,
+            contentDescription = album.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
-
+        // Smooth bottom editorial gradient overlay
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(OnyxDesignTokens.EditorialHeroCardHeight)
-                .shadow(
-                    elevation = if (auraColors.isDark) 20.dp else 10.dp,
-                    shape = cardShape,
-                    ambientColor = album.primaryColor.copy(alpha = 0.45f),
-                    spotColor = PureBlack.copy(alpha = 0.5f)
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        0.0f to PureBlack.copy(alpha = 0.14f),
+                        0.40f to Color.Transparent,
+                        0.68f to PureBlack.copy(alpha = 0.72f),
+                        1.0f to PureBlack.copy(alpha = 0.94f)
+                    )
                 )
-                .clip(cardShape)
-                .background(auraColors.cardSurface)
-                .border(0.8.dp, auraColors.glassBorder.copy(alpha = 0.4f), cardShape)
-        ) {
-            AsyncImage(
-                model = album.artworkRes,
-                contentDescription = album.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+        )
 
+        if (album.isSpatialAudio) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                PureBlack.copy(alpha = 0.75f),
-                                PureBlack.copy(alpha = 0.92f)
-                            )
-                        )
-                    )
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .align(Alignment.TopStart)
+                    .padding(14.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(PureBlack.copy(alpha = 0.56f))
+                    .border(0.5.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 7.dp, vertical = 3.5.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.GraphicEq,
+                        contentDescription = null,
+                        tint = TextPrimaryWhite.copy(alpha = 0.9f),
+                        modifier = Modifier.size(11.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "DOLBY ATMOS",
+                        color = TextPrimaryWhite.copy(alpha = 0.92f),
+                        fontFamily = InterFontFamily,
+                        fontSize = 8.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.6.sp
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = (album.badgeText ?: album.categoryTag).uppercase(),
+                color = TextPrimaryWhite.copy(alpha = 0.72f),
+                fontFamily = InterFontFamily,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.7.sp,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = album.title,
+                        color = TextPrimaryWhite,
+                        fontFamily = InterFontFamily,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.3).sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${album.artist} • ${album.releaseYear}",
+                        color = TextPrimaryWhite.copy(alpha = 0.80f),
+                        fontFamily = InterFontFamily,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = album.description,
+                        color = TextPrimaryWhite.copy(alpha = 0.68f),
+                        fontFamily = InterFontFamily,
+                        fontSize = 12.sp,
+                        lineHeight = 15.5.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.22f))
+                        .border(0.75.dp, Color.White.copy(alpha = 0.32f), CircleShape)
+                        .clickable(onClick = onPlayClick),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = album.description,
-                            color = TextPrimaryWhite.copy(alpha = 0.90f),
-                            fontFamily = InterFontFamily,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(ElectricBlue)
-                            .clickable(onClick = onPlayClick),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play ${album.title}",
-                            tint = TextPrimaryWhite,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Play ${album.title}",
+                        tint = TextPrimaryWhite,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
         }

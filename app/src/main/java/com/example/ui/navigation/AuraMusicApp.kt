@@ -58,6 +58,7 @@ import com.example.ui.components.realBackdropBlur
 import com.example.ui.screens.AccountScreen
 import com.example.ui.screens.AddToPlaylistModal
 import com.example.ui.screens.AudioOutputOverlaySheet
+import com.example.ui.screens.CreatePlaylistModalSheet
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LibraryScreen
 import com.example.ui.screens.LyricsScreen
@@ -614,6 +615,10 @@ fun AuraMusicApp(
                             launchSingleTop = true
                         }
                     },
+                    onSecondaryActionClick = if (uiState.selectedTab == AppTab.LIBRARY) {
+                        { musicViewModel.setCreatePlaylistModalOpen(true) }
+                    } else null,
+                    secondaryActionDescription = "Create Playlist",
                     isScrolled = isCurrentTabScrolled,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
@@ -721,6 +726,13 @@ fun AuraMusicApp(
             playlists = uiState.allPlaylists,
             onSelectPlaylist = musicViewModel::addSongToPlaylist,
             onDismiss = musicViewModel::dismissAddToPlaylistModal
+        )
+
+        // Create Playlist Modal (Apple Music Library "+" Header Action)
+        CreatePlaylistModalSheet(
+            visible = uiState.isCreatePlaylistModalOpen,
+            onCreatePlaylist = musicViewModel::createCustomPlaylist,
+            onDismiss = { musicViewModel.setCreatePlaylistModalOpen(false) }
         )
 
         // Sleep Timer Modal

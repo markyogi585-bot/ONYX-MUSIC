@@ -7,11 +7,11 @@ import androidx.compose.ui.unit.dp
 
 // Phase 2 Core Apple Music Dark & Light Mode Tokens
 val PureBlack = Color(0xFF000000)
-val DeepObsidian = Color(0xFF101010)
-val CharcoalSurface = Color(0xFF161618)
+val DeepObsidian = Color(0xFF101014)
+val CharcoalSurface = Color(0xFF171719)
 val CharcoalElevated = Color(0xFF1C1C1E)
-val CharcoalCard = Color(0xFF202124)
-val CharcoalHighlight = Color(0xFF2C2C2E)
+val CharcoalCard = Color(0xFF1C1C1E)
+val CharcoalHighlight = Color(0xFF252527)
 
 // Light Mode Tokens
 val PureWhite = Color(0xFFFFFFFF)
@@ -23,25 +23,25 @@ val LightTextSecondary = Color(0xFF6C6C70)
 val LightDivider = Color(0x26000000)
 
 // Electric Blue Accents (Selected Tabs, Links, Interactive Highlights)
-val ElectricBlue = Color(0xFF0A84FF)
+val ElectricBlue = Color(0xFF168BFF)
 val ElectricBlueBright = Color(0xFF409CFF)
-val ElectricBlueGlow = Color(0x440A84FF)
+val ElectricBlueGlow = Color(0x44168BFF)
 val ElectricCyan = Color(0xFF00F5D4)
 val DestructiveRed = Color(0xFFFF453A)
 
 // Glassmorphic Tokens
-val GlassSurfaceDark = Color(0xB818181C)
-val GlassSurfaceElevated = Color(0xCC222228)
-val GlassPopupSurface = Color(0xD91E1E24)
-val GlassBorderLight = Color(0x38FFFFFF)
-val GlassBorderSubtle = Color(0x1EFFFFFF)
-val GlassInnerHighlight = Color(0x14FFFFFF)
+val GlassSurfaceDark = Color(0xE6171719)
+val GlassSurfaceElevated = Color(0xEB242426)
+val GlassPopupSurface = Color(0xF21E1E22)
+val GlassBorderLight = Color(0x1AFFFFFF)
+val GlassBorderSubtle = Color(0x1AFFFFFF)
+val GlassInnerHighlight = Color(0x12FFFFFF)
 
-// Typography & Iconography Colors (Phase 2: Primary #FFFFFF, Secondary #A1A1AA)
+// Typography & Iconography Colors (Primary #FFFFFF, Secondary #A1A1A6)
 val TextPrimaryWhite = Color(0xFFFFFFFF)
-val TextSecondaryGrey = Color(0xFFA1A1AA)
+val TextSecondaryGrey = Color(0xFFA1A1A6)
 val TextTertiaryMuted = Color(0xFF71717A)
-val DividerSubtle = Color(0x22FFFFFF)
+val DividerSubtle = Color(0xFF303033)
 
 // Ambient Artwork Glow Colors
 val AmbientViolet = Color(0xFF7209B7)
@@ -62,23 +62,23 @@ object OnyxDesignTokens {
     val ListItemVerticalPadding = 8.dp
 
     // Corner radius tokens
-    val HeroCardCornerRadius = 18.dp
+    val HeroCardCornerRadius = 20.dp
     val AlbumCardCornerRadius = 14.dp
     val PlaylistCardCornerRadius = 16.dp
-    val MiniPlayerCornerRadius = 18.dp
+    val MiniPlayerCornerRadius = 20.dp
     val TrackThumbCornerRadius = 10.dp
-    val SheetTopCornerRadius = 26.dp
+    val SheetTopCornerRadius = 28.dp
 
     // Artwork & Card dimensions
-    val EditorialHeroCardWidth = 274.dp
-    val EditorialHeroCardHeight = 274.dp
+    val EditorialHeroCardWidth = 288.dp
+    val EditorialHeroCardHeight = 356.dp
     val StandardSquareCardWidth = 164.dp
-    val PlaylistSquareCardWidth = 174.dp
-    val ArtistAvatarSize = 114.dp
-    val MiniPlayerHeight = 58.dp
-    val MiniPlayerArtSize = 44.dp
-    val BottomNavBarHeight = 64.dp
-    val BottomNavIconSize = 22.dp
+    val PlaylistSquareCardWidth = 168.dp
+    val ArtistAvatarSize = 116.dp
+    val MiniPlayerHeight = 62.dp
+    val MiniPlayerArtSize = 46.dp
+    val BottomNavBarHeight = 70.dp
+    val BottomNavIconSize = 27.dp
 
     // Animation durations (ms)
     const val FastAnimMs = 180

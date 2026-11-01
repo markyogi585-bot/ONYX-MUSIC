@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -140,6 +142,14 @@ fun AccountScreen(
                             .padding(horizontal = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_onyx_logo),
+                            contentDescription = "ONYX MUSIC",
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Signed in as ${userProfile.email}",
                             color = auraColors.textSecondary,
@@ -148,7 +158,7 @@ fun AccountScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Onyx Music Lossless & Spatial Audio • v2.4.0",
+                            text = "Onyx Music Lossless & Spatial Audio • v2.5.0",
                             color = auraColors.textSecondary.copy(alpha = 0.72f),
                             fontFamily = InterFontFamily,
                             fontSize = 11.5.sp

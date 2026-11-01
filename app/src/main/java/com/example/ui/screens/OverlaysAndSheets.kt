@@ -10,6 +10,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -2294,18 +2295,18 @@ fun OnyxSplashOverlay(
     var startAnim by remember { mutableStateOf(false) }
     val alpha by animateFloatAsState(
         targetValue = if (startAnim) 1f else 0f,
-        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 680, easing = FastOutSlowInEasing),
         label = "splash_alpha"
     )
     val scale by animateFloatAsState(
-        targetValue = if (startAnim) 1f else 0.86f,
-        animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
+        targetValue = if (startAnim) 1f else 0.90f,
+        animationSpec = tween(durationMillis = 820, easing = FastOutSlowInEasing),
         label = "splash_scale"
     )
 
     LaunchedEffect(Unit) {
         startAnim = true
-        delay(1750)
+        delay(1900)
         onSplashFinished()
     }
 
@@ -2317,12 +2318,12 @@ fun OnyxSplashOverlay(
             .testTag("onyx_splash_screen"),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-            contentDescription = "Onyx Music Logo",
-            tint = Color.Unspecified,
+        Image(
+            painter = painterResource(id = R.drawable.ic_onyx_logo),
+            contentDescription = "ONYX MUSIC",
+            contentScale = ContentScale.Fit,
             modifier = Modifier
-                .size(164.dp)
+                .size(152.dp)
                 .graphicsLayer {
                     this.alpha = alpha
                     this.scaleX = scale

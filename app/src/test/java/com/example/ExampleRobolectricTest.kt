@@ -44,7 +44,7 @@ class ExampleRobolectricTest {
         composeTestRule.onNodeWithText("Made For You").assertIsDisplayed()
 
         // 3. Test True Back Stack: HOME -> PLAYLIST -> NOW PLAYING -> LYRICS -> BACK -> QUEUE -> BACK -> PLAYLIST -> HOME
-        composeTestRule.onNodeWithTag("playlist_card_pl_midnight_drive").performClick()
+        composeTestRule.onNodeWithTag("playlist_card_pl_midnight_drive").performScrollTo().performClick()
         composeTestRule.onNodeWithTag("detail_overlay_sheet").assertIsDisplayed()
         composeTestRule.onNodeWithTag("detail_play_button").assertIsDisplayed()
         composeTestRule.onNodeWithTag("detail_shuffle_button").assertIsDisplayed()

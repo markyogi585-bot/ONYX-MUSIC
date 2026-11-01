@@ -31,7 +31,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -44,11 +46,12 @@ import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LocalAuraColors
 import com.example.ui.theme.OnyxDesignTokens
+import com.example.ui.theme.PureBlack
 
 /**
- * Floating Glass Mini-Player positioned directly above the Bottom Navigation Bar.
- * - Strict 1:1 square album artwork thumbnail on the left
- * - Song title + artist subtitle with clean single-line ellipsis truncation
+ * Floating Apple Music-Inspired Dark Glass Mini-Player positioned directly above the Bottom Navigation Bar.
+ * - Strict 1:1 square album artwork thumbnail on the left (46.dp)
+ * - Bold white song title + secondary grey artist subtitle with animated equalizer bars when playing
  * - Accessible 48.dp Play/Pause & Next Track buttons
  * - Smooth animated progress bar along the bottom edge
  */
@@ -73,22 +76,29 @@ fun FloatingGlassMiniPlayer(
         label = "mini_player_progress"
     )
 
+    val containerBg = if (auraColors.isDark) Color(0xF21C1C1E) else Color(0xF5FFFFFF)
+    val borderTint = if (auraColors.isDark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.10f)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 18.dp),
         contentAlignment = Alignment.Center
     ) {
-        FrostedGlassContainer(
-            shape = pillShape,
-            accentGlowColor = currentSong.accentColor,
-            elevation = 18.dp,
-            baseAlpha = 0.88f,
-            borderWidth = 0.85.dp,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .widthIn(max = 460.dp)
+                .widthIn(max = 480.dp)
                 .height(OnyxDesignTokens.MiniPlayerHeight)
+                .shadow(
+                    elevation = 16.dp,
+                    shape = pillShape,
+                    ambientColor = PureBlack,
+                    spotColor = PureBlack
+                )
+                .clip(pillShape)
+                .background(containerBg)
+                .border(1.dp, borderTint, pillShape)
                 .clickable(onClick = onExpandNowPlaying)
                 .testTag("floating_mini_player")
         ) {
@@ -113,9 +123,10 @@ fun FloatingGlassMiniPlayer(
                                 .background(auraColors.cardSurface)
                                 .border(
                                     0.6.dp,
-                                    auraColors.glassBorder,
+                                    borderTint,
                                     RoundedCornerShape(OnyxDesignTokens.TrackThumbCornerRadius)
-                                )
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
                                 model = currentSong.artworkRes,
@@ -123,6 +134,16 @@ fun FloatingGlassMiniPlayer(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
                             )
+                            if (isPlaying) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(PureBlack.copy(alpha = 0.45f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AnimatedEqualizerBars(color = ElectricBlue)
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.width(12.dp))
@@ -132,7 +153,7 @@ fun FloatingGlassMiniPlayer(
                                 text = currentSong.title,
                                 color = auraColors.textPrimary,
                                 fontFamily = InterFontFamily,
-                                fontSize = 14.5.sp,
+                                fontSize = 15.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -142,7 +163,7 @@ fun FloatingGlassMiniPlayer(
                                 text = currentSong.artist,
                                 color = auraColors.textSecondary,
                                 fontFamily = InterFontFamily,
-                                fontSize = 12.5.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -161,7 +182,7 @@ fun FloatingGlassMiniPlayer(
                                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                 contentDescription = if (isPlaying) "Pause" else "Play",
                                 tint = auraColors.textPrimary,
-                                modifier = Modifier.size(27.dp)
+                                modifier = Modifier.size(28.dp)
                             )
                         }
 
@@ -175,7 +196,7 @@ fun FloatingGlassMiniPlayer(
                                 imageVector = Icons.Filled.FastForward,
                                 contentDescription = "Next Track",
                                 tint = auraColors.textPrimary,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(25.dp)
                             )
                         }
                     }
@@ -185,7 +206,7 @@ fun FloatingGlassMiniPlayer(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(2.5.dp)
-                        .background(auraColors.textSecondary.copy(alpha = 0.16f))
+                        .background(auraColors.textSecondary.copy(alpha = 0.14f))
                 ) {
                     Box(
                         modifier = Modifier

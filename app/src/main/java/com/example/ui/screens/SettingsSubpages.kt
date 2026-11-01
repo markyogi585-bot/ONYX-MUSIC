@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +45,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.core.content.ContextCompat
+import com.example.R
 import com.example.data.preferences.PersistedSettings
 import com.example.data.preferences.ThemeMode
 import com.example.ui.components.GlassButton
@@ -478,9 +483,39 @@ fun SettingsSubpageScreen(
 
                 "about" -> {
                     item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_onyx_logo),
+                                contentDescription = "ONYX MUSIC",
+                                modifier = Modifier
+                                    .size(84.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "ONYX MUSIC",
+                                color = auraColors.textPrimary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.2.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Lossless & Spatial Audio • v2.5.0",
+                                color = auraColors.textSecondary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 13.sp
+                            )
+                        }
                         SettingsSectionHeader("APPLICATION DETAILS")
                         GlassCard {
-                            AboutInfoRow("Application Version", "2.4.0 (Build 2026.10)")
+                            AboutInfoRow("Application Version", "2.5.0 (Build 2026.11)")
                             SettingsInsetDivider()
                             AboutInfoRow("Audio Engine", "24-bit Lossless & Spatial Audio Renderer")
                             SettingsInsetDivider()
