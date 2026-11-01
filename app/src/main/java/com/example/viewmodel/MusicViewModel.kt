@@ -1,14 +1,20 @@
 package com.example.viewmodel
 
+import android.app.Activity
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.ai.GeminiMusicAiService
 import com.example.data.audio.AndroidAudioOutputManager
 import com.example.data.audio.OnyxMediaNotificationHelper
 import com.example.data.audio.SynthesizedAudioEngine
 import com.example.data.download.DownloadedTrackRecord
 import com.example.data.download.MusicFolderInfo
 import com.example.data.download.OnyxDownloadManager
+import com.example.data.firebase.OnyxFirebaseRepository
 import com.example.data.preferences.PersistedSettings
 import com.example.data.preferences.ThemeMode
 import com.example.data.preferences.UserPreferencesRepository
@@ -26,6 +32,9 @@ import com.example.domain.model.Song
 import com.example.domain.model.UserProfile
 import com.example.domain.usecase.GetMusicCatalogUseCase
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +77,36 @@ data class MusicUiState(
     val radioStations: List<RadioStation> = emptyList(),
     val recentlyPlayedStations: List<RadioStation> = emptyList(),
 
-    // Playback, Queue & Sleep Timer State
+    // Moods & Gemini AI Smart Suggestions State
+    val availableMoods: List<String> = listOf(
+        "🔥 Mass & Action",
+        "❤️ Late Night Romance",
+        "⚡ Workout & Gym",
+        "🚗 Long Drive Punjabi",
+        "🕺 Desi Party",
+        "🌧️ Soulful Lo-Fi",
+        "🧘 Deep Focus"
+    ),
+    val selectedMood: String = "🔥 Mass & Action",
+    val aiMoodCuratorNote: String = "High-adrenaline theater anthems, explosive rap verses, and heavy basslines curated by Gemini AI.",
+    val aiMoodTargetBpm: Int = 134,
+    val isGeneratingMoodMix: Boolean = false,
+    val aiSuggestedSongs: List<Song> = emptyList(),
+
+    // Gemini AI Accurate Lyrics & Bilingual Translation State
+    val isGeneratingAiLyrics: Boolean = false,
+    val showLyricsTranslation: Boolean = true,
+    val aiLyricsMeaningMap: Map<String, String> = emptyMap(),
+    val aiLyricsMoodTagMap: Map<String, String> = emptyMap(),
+
+    // Firebase Auth & Cloud Firestore Sync State
+    val firebaseUserUid: String? = null,
+    val firebaseUserEmail: String? = null,
+    val firebaseUserDisplayName: String? = null,
+    val cloudSyncedItemsCount: Int = 0,
+    val isCloudSyncing: Boolean = false,
+
+    // Playback, Queue, Headphone/Earbuds & Sleep Timer State
     val currentSong: Song,
     val queueSongs: List<Song> = emptyList(),
     val isPlaying: Boolean = false,
@@ -83,6 +121,9 @@ data class MusicUiState(
     val savedAlbumIds: Set<String> = setOf("alb_neon_horizons", "alb_velvet_echoes", "alb_solar_flare"),
     val selectedAudioOutput: String = "This Android Phone",
     val availableAudioOutputs: List<AudioOutputRoute> = emptyList(),
+    val hardwareVolumePercent: Int = 75,
+    val earbudNoiseControlMode: String = "Adaptive ANC",
+    val autoPauseOnEarbudDisconnect: Boolean = true,
     val isAudioOutputSheetOpen: Boolean = false,
     val isSleepTimerSheetOpen: Boolean = false,
     val activeTrackOptionsSong: Song? = null,
@@ -90,7 +131,9 @@ data class MusicUiState(
     val activeAddToPlaylistSong: Song? = null,
     val activeReportConcernSong: Song? = null,
 
-    // Search, Pagination, Download & Folder System State
+    // Offline Mode & Search / Pagination / Download / Folder System State
+    val isOfflineMode: Boolean = false,
+    val offlineOnlyFilterEnabled: Boolean = false,
     val searchQuery: String = "",
     val selectedSearchCategory: String? = null,
     val isSearchingOnline: Boolean = false,
@@ -145,9 +188,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     )
     private val audioOutputManager = AndroidAudioOutputManager(application.applicationContext)
     private val mediaNotificationHelper = OnyxMediaNotificationHelper(application.applicationContext)
+    private val firebaseRepository: OnyxFirebaseRepository? by lazy {
+        runCatching { OnyxFirebaseRepository.getInstance(application.applicationContext) }.getOrNull()
+    }
+
     private var progressJob: Job? = null
     private var toastJob: Job? = null
     private var searchJob: Job? = null
+    private var cloudSyncJob: Job? = null
+    private var moodJob: Job? = null
 
     private val initialDownloadedRecords = downloadManager.getDownloadedTracks()
     private val initialDownloadedSongs = initialDownloadedRecords.map { downloadManager.toSong(it) }
@@ -185,10 +234,12 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             allArtists = initialArtists,
             radioStations = initialStations,
             recentlyPlayedStations = initialStations.take(3),
+            aiSuggestedSongs = initialSongs.take(8),
             currentSong = initialSongs.first(),
             queueSongs = initialSongs,
             selectedAudioOutput = initialRoutes.firstOrNull()?.name ?: "This Android Phone",
             availableAudioOutputs = initialRoutes,
+            hardwareVolumePercent = audioOutputManager.getSystemVolumePercent(),
             searchResultAlbums = initialAlbums,
             searchResultSongs = initialSongs,
             downloadedTracks = initialDownloadedRecords,
@@ -215,31 +266,162 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+
+        // Register headphone/earbud disconnect & connect hardware receiver
+        audioOutputManager.registerAudioDisconnectListener(
+            onEarbudsDisconnected = {
+                val routes = audioOutputManager.getAvailableOutputRoutes()
+                val shouldAutoPause = _uiState.value.autoPauseOnEarbudDisconnect && _uiState.value.isPlaying
+                if (shouldAutoPause) {
+                    audioEngine.pause()
+                    progressJob?.cancel()
+                }
+                _uiState.update { state ->
+                    state.copy(
+                        isPlaying = if (shouldAutoPause) false else state.isPlaying,
+                        availableAudioOutputs = routes,
+                        selectedAudioOutput = "This Android Phone",
+                        toastMessage = if (shouldAutoPause) {
+                            "Earbuds disconnected — playback auto-paused"
+                        } else {
+                            "Switched output to Phone Speaker"
+                        }
+                    )
+                }
+                scheduleToastClear()
+            },
+            onHeadsetConnected = { deviceName ->
+                val routes = audioOutputManager.getAvailableOutputRoutes()
+                _uiState.update { state ->
+                    state.copy(
+                        availableAudioOutputs = routes,
+                        selectedAudioOutput = deviceName,
+                        toastMessage = "Connected: $deviceName • Spatial Audio Ready"
+                    )
+                }
+                scheduleToastClear()
+            }
+        )
+
+        // Observe Firebase Auth state & only attach Firestore listener when signed in with Google
+        viewModelScope.launch {
+            val repo = firebaseRepository ?: return@launch
+            repo.observeAuthState().collect { user ->
+                cloudSyncJob?.cancel()
+                if (user != null) {
+                    _uiState.update { state ->
+                        state.copy(
+                            firebaseUserUid = user.uid,
+                            firebaseUserEmail = user.email,
+                            firebaseUserDisplayName = user.displayName ?: state.userProfile.displayName,
+                            userProfile = state.userProfile.copy(
+                                displayName = user.displayName ?: state.userProfile.displayName,
+                                email = user.email ?: state.userProfile.email,
+                                isProfileSetUp = true
+                            )
+                        )
+                    }
+                    cloudSyncJob = viewModelScope.launch {
+                        repo.observeCloudItems(user.uid).collect { cloudItems ->
+                            val cloudFavIds = cloudItems
+                                .filter { it.category == "favorite" }
+                                .map { it.songId }
+                                .toSet()
+                            _uiState.update { state ->
+                                state.copy(
+                                    likedSongIds = state.likedSongIds + cloudFavIds,
+                                    cloudSyncedItemsCount = cloudItems.size
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    _uiState.update { state ->
+                        state.copy(
+                            firebaseUserUid = null,
+                            firebaseUserEmail = null,
+                            firebaseUserDisplayName = null,
+                            cloudSyncedItemsCount = 0
+                        )
+                    }
+                }
+            }
+        }
+
         refreshLiveCatalogFromApi()
     }
 
+    private fun checkNetworkAvailable(): Boolean {
+        return runCatching {
+            val cm = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return true
+            val net = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(net) ?: return false
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        }.getOrDefault(true)
+    }
+
     /**
-     * Pre-buffers the active catalog tracks and fetches trending 2026 Bollywood, Dhurandhar & Punjabi songs
-     * in parallel on startup so the library is packed with instant-play songs.
+     * Fetches trending 2026 Bollywood, Dhurandhar & Punjabi songs in parallel on startup
+     * and populates inbuilt playlists with 35–50+ real API songs.
      */
-    private fun refreshLiveCatalogFromApi() {
-        audioEngine.preloadCatalogSongs(initialSongs.take(6))
+    fun refreshLiveCatalogFromApi() {
+        val online = checkNetworkAvailable()
+        _uiState.update { it.copy(isOfflineMode = !online) }
+        audioEngine.preloadCatalogSongs(initialSongs.take(3))
         viewModelScope.launch {
             val apiSongs = OnyxSongApiService.fetchTrending2026Catalog()
             if (apiSongs.isNotEmpty()) {
-                audioEngine.preloadCatalogSongs(apiSongs.take(4))
+                audioEngine.preloadCatalogSongs(apiSongs.take(2))
                 val apiAlbums = OnyxSongApiService.buildAlbumsFromSongs(apiSongs, "2026 BLOCKBUSTER • LIVE")
                 _uiState.update { state ->
                     val mergedSongs = (state.allSongs + apiSongs)
                         .distinctBy { it.audioUrl ?: it.id }
                     val mergedAlbums = (state.allAlbums + apiAlbums)
                         .distinctBy { it.title.lowercase().trim() }
+
+                    // Enrich inbuilt playlists so each playlist has 30-50+ live API songs
+                    val enrichedPlaylists = state.allPlaylists.map { pl ->
+                        val extraIds = when (pl.id) {
+                            "pl_midnight_drive" -> mergedSongs.filter { s ->
+                                val t = "${s.title} ${s.albumTitle} ${s.artist}".lowercase()
+                                t.contains("dhurandhar") || t.contains("shashwat") || t.contains("raid") ||
+                                    t.contains("pushpa") || t.contains("stree") || t.contains("animal")
+                            }.map { it.id }
+                            "pl_velvet_lounge" -> mergedSongs.filter { s ->
+                                val t = "${s.title} ${s.albumTitle} ${s.artist}".lowercase()
+                                t.contains("arijit") || t.contains("vishal") || t.contains("saiyaara") ||
+                                    t.contains("do patti") || t.contains("ishq") || t.contains("sajni") || t.contains("kesariya")
+                            }.map { it.id }
+                            "pl_deep_focus" -> mergedSongs.filter { s ->
+                                val t = "${s.title} ${s.albumTitle} ${s.artist}".lowercase()
+                                t.contains("aujla") || t.contains("diljit") || t.contains("honey singh") ||
+                                    t.contains("punjabi") || t.contains("tauba") || t.contains("glory")
+                            }.map { it.id }
+                            "pl_new_wave" -> mergedSongs.filter { s ->
+                                val t = "${s.title} ${s.albumTitle} ${s.artist}".lowercase()
+                                t.contains("stree") || t.contains("bhool") || t.contains("aaj ki raat") ||
+                                    t.contains("sachin") || t.contains("pritam") || t.contains("tanishk")
+                            }.map { it.id }
+                            else -> mergedSongs.take(35).map { it.id }
+                        }
+                        val combinedIds = (pl.songIds + extraIds + mergedSongs.take(35).map { it.id }).distinct().take(50)
+                        pl.copy(songIds = combinedIds)
+                    }
+
                     state.copy(
+                        isOfflineMode = false,
                         allSongs = mergedSongs,
                         allAlbums = mergedAlbums,
-                        bestNewSongs = (state.bestNewSongs + apiSongs.take(8)).distinctBy { it.audioUrl ?: it.id }.take(16),
-                        topSongs = (state.topSongs + apiSongs.take(6)).distinctBy { it.audioUrl ?: it.id }.take(14),
-                        popularSongs = (state.popularSongs + apiSongs.take(6)).distinctBy { it.audioUrl ?: it.id }.take(14),
+                        allPlaylists = enrichedPlaylists,
+                        madeForYou = enrichedPlaylists,
+                        popularPlaylists = enrichedPlaylists,
+                        featuredPlaylists = enrichedPlaylists,
+                        updatedPlaylists = enrichedPlaylists,
+                        bestNewSongs = (state.bestNewSongs + apiSongs.take(12)).distinctBy { it.audioUrl ?: it.id }.take(20),
+                        topSongs = (state.topSongs + apiSongs.take(10)).distinctBy { it.audioUrl ?: it.id }.take(18),
+                        popularSongs = (state.popularSongs + apiSongs.take(10)).distinctBy { it.audioUrl ?: it.id }.take(18),
+                        aiSuggestedSongs = (state.aiSuggestedSongs + apiSongs.take(8)).distinctBy { it.audioUrl ?: it.id }.take(14),
                         queueSongs = if (!state.isPlaying) mergedSongs else state.queueSongs,
                         searchResultSongs = if (state.searchQuery.isBlank() && state.selectedSearchCategory == null) {
                             mergedSongs
@@ -249,8 +431,248 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                         } else state.searchResultAlbums
                     )
                 }
+            } else {
+                _uiState.update { it.copy(isOfflineMode = !checkNetworkAvailable()) }
             }
         }
+    }
+
+    // =========================================================================
+    // GEMINI AI MOODS, SMART SUGGESTIONS & ACCURATE SYNCED LYRICS
+    // =========================================================================
+
+    fun selectMood(moodLabel: String, autoPlayMix: Boolean = false) {
+        moodJob?.cancel()
+        val preset = GeminiMusicAiService.getCuratedMoodPreset(moodLabel, _uiState.value.allSongs)
+        val initialMatched = _uiState.value.allSongs.filter { preset.recommendedSongIds.contains(it.id) }
+            .ifEmpty { _uiState.value.allSongs.take(10) }
+
+        _uiState.update { state ->
+            state.copy(
+                selectedMood = moodLabel,
+                aiMoodCuratorNote = preset.aiCuratorNote,
+                aiMoodTargetBpm = preset.suggestedTempoBpm,
+                aiSuggestedSongs = initialMatched,
+                isGeneratingMoodMix = true
+            )
+        }
+
+        if (autoPlayMix && initialMatched.isNotEmpty()) {
+            playSong(initialMatched.first(), initialMatched)
+        }
+
+        moodJob = viewModelScope.launch {
+            val aiResult = GeminiMusicAiService.generateMoodSuggestions(moodLabel, _uiState.value.allSongs)
+            val liveMoodSongs = coroutineScope {
+                aiResult.recommendedQueries.take(3).map { q ->
+                    async { runCatching { OnyxSongApiService.searchSongs(q, resolveArtwork = false, page = 1, pageSize = 15) }.getOrDefault(emptyList()) }
+                }.awaitAll().flatten()
+            }
+
+            _uiState.update { state ->
+                val mergedAll = (state.allSongs + liveMoodSongs).distinctBy { it.audioUrl ?: it.id }
+                val moodTracks = (
+                    mergedAll.filter { aiResult.recommendedSongIds.contains(it.id) } +
+                        liveMoodSongs +
+                        initialMatched
+                    ).distinctBy { it.audioUrl ?: it.id }.take(24)
+
+                state.copy(
+                    allSongs = mergedAll,
+                    aiMoodCuratorNote = aiResult.aiCuratorNote,
+                    aiMoodTargetBpm = aiResult.suggestedTempoBpm,
+                    aiSuggestedSongs = moodTracks.ifEmpty { state.allSongs.take(12) },
+                    isGeneratingMoodMix = false
+                )
+            }
+
+            // Sync selected mood to Cloud Firestore if authenticated with Google
+            val uid = _uiState.value.firebaseUserUid
+            if (uid != null) {
+                runCatching {
+                    val safeMoodId = "mood_${moodLabel.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_')}"
+                    firebaseRepository?.createCloudItem(
+                        userId = uid,
+                        itemId = safeMoodId,
+                        songId = safeMoodId,
+                        title = moodLabel,
+                        artist = aiResult.aiCuratorNote,
+                        category = "mood"
+                    )
+                }
+            }
+        }
+    }
+
+    fun playAiMoodMix() {
+        val mix = _uiState.value.aiSuggestedSongs.ifEmpty { _uiState.value.allSongs }
+        if (mix.isNotEmpty()) {
+            playSong(mix.first(), mix)
+            showToast("Playing Gemini AI Mix: ${_uiState.value.selectedMood}")
+        }
+    }
+
+    /**
+     * Uses Gemini 3.8 Flash (Firebase AI Logic) + LRCLIB to generate/verify accurate time-synced lyrics
+     * and bilingual English translations for the currently playing song.
+     */
+    fun verifyLyricsWithGeminiAi(targetSong: Song = _uiState.value.currentSong) {
+        if (_uiState.value.isGeneratingAiLyrics) return
+        _uiState.update {
+            it.copy(
+                isGeneratingAiLyrics = true,
+                toastMessage = "Gemini AI is verifying time-synced lyrics for '${targetSong.title}'..."
+            )
+        }
+        scheduleToastClear()
+
+        viewModelScope.launch {
+            val lrcLines = OnyxSongApiService.fetchLiveSyncedLyrics(targetSong)
+            val aiResult = GeminiMusicAiService.generateAccurateSyncedLyrics(
+                song = targetSong,
+                existingLyrics = lrcLines
+            )
+
+            _uiState.update { state ->
+                val updatedSong = state.currentSong.let { cur ->
+                    if (cur.id == targetSong.id) cur.copy(synchronizedLyrics = aiResult.lines) else cur
+                }
+                val updatedAll = state.allSongs.map { s ->
+                    if (s.id == targetSong.id) s.copy(synchronizedLyrics = aiResult.lines) else s
+                }
+                state.copy(
+                    isGeneratingAiLyrics = false,
+                    currentSong = updatedSong,
+                    allSongs = updatedAll,
+                    aiLyricsMeaningMap = state.aiLyricsMeaningMap + (targetSong.id to aiResult.meaningSummary),
+                    aiLyricsMoodTagMap = state.aiLyricsMoodTagMap + (targetSong.id to aiResult.moodTag),
+                    toastMessage = "✨ Gemini AI verified ${aiResult.lines.size} synced lines & translation"
+                )
+            }
+            scheduleToastClear()
+        }
+    }
+
+    fun toggleLyricsTranslation() {
+        _uiState.update { state ->
+            val next = !state.showLyricsTranslation
+            state.copy(
+                showLyricsTranslation = next,
+                toastMessage = if (next) "Bilingual English translation enabled" else "Showing original lyrics only"
+            )
+        }
+        scheduleToastClear()
+    }
+
+    // =========================================================================
+    // FIREBASE GOOGLE SIGN-IN & CLOUD FIRESTORE SYNC ACTIONS
+    // =========================================================================
+
+    fun signInWithGoogle(activity: Activity) {
+        val repo = firebaseRepository
+        if (repo == null) {
+            showToast("Firebase Cloud service initializing...")
+            return
+        }
+        _uiState.update { it.copy(isCloudSyncing = true) }
+        viewModelScope.launch {
+            val res = repo.signInWithGoogle(activity)
+            res.onSuccess { user ->
+                _uiState.update { state ->
+                    state.copy(
+                        isCloudSyncing = false,
+                        firebaseUserUid = user.uid,
+                        firebaseUserEmail = user.email,
+                        firebaseUserDisplayName = user.displayName ?: state.userProfile.displayName,
+                        userProfile = state.userProfile.copy(
+                            displayName = user.displayName ?: state.userProfile.displayName,
+                            email = user.email ?: state.userProfile.email,
+                            isProfileSetUp = true
+                        ),
+                        toastMessage = "Signed in as ${user.displayName ?: user.email} • Cloud Sync Active"
+                    )
+                }
+                scheduleToastClear()
+                syncAllFavoritesToCloud(user.uid)
+            }.onFailure { err ->
+                _uiState.update {
+                    it.copy(
+                        isCloudSyncing = false,
+                        toastMessage = "Google Sign-In: ${err.localizedMessage ?: "Select a Google account on device"}"
+                    )
+                }
+                scheduleToastClear()
+            }
+        }
+    }
+
+    private fun syncAllFavoritesToCloud(userId: String) {
+        val repo = firebaseRepository ?: return
+        viewModelScope.launch {
+            val favSongs = _uiState.value.allSongs.filter { _uiState.value.likedSongIds.contains(it.id) }
+            for (song in favSongs.take(10)) {
+                val safeId = "fav_${song.id.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")}"
+                runCatching {
+                    repo.createCloudItem(
+                        userId = userId,
+                        itemId = safeId,
+                        songId = song.id,
+                        title = song.title,
+                        artist = song.artist,
+                        category = "favorite"
+                    )
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // HEADPHONE / EARBUDS / BLUETOOTH HARDWARE CONTROLS & OFFLINE MODE
+    // =========================================================================
+
+    fun setHardwareVolumePercent(percent: Int) {
+        val clamped = percent.coerceIn(0, 100)
+        audioOutputManager.setSystemVolumePercent(clamped)
+        if (clamped > 0 && _uiState.value.isMuted) {
+            audioEngine.setMuted(false)
+        }
+        _uiState.update {
+            it.copy(
+                hardwareVolumePercent = clamped,
+                isMuted = if (clamped > 0) false else it.isMuted
+            )
+        }
+    }
+
+    fun setEarbudNoiseControlMode(mode: String) {
+        _uiState.update {
+            it.copy(
+                earbudNoiseControlMode = mode,
+                toastMessage = "Earbuds Mode: $mode"
+            )
+        }
+        scheduleToastClear()
+    }
+
+    fun setAutoPauseOnEarbudDisconnect(enabled: Boolean) {
+        _uiState.update {
+            it.copy(
+                autoPauseOnEarbudDisconnect = enabled,
+                toastMessage = if (enabled) "Auto-pause on earbud disconnect enabled" else "Auto-pause on disconnect disabled"
+            )
+        }
+        scheduleToastClear()
+    }
+
+    fun toggleOfflineOnlyFilter() {
+        _uiState.update { state ->
+            val next = !state.offlineOnlyFilterEnabled
+            state.copy(
+                offlineOnlyFilterEnabled = next,
+                toastMessage = if (next) "Offline Mode: Showing cached & downloaded songs" else "Online Streaming Mode active"
+            )
+        }
+        scheduleToastClear()
     }
 
     fun dismissSplashOverlay() {
@@ -312,6 +734,19 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         audioEngine.updateFrequency(song.baseFreqHz)
         mediaNotificationHelper.updatePlaybackNotification(song, true)
         startProgressTicker()
+
+        // Fetch live synced LRC lyrics in the background if available
+        viewModelScope.launch {
+            val liveLyrics = OnyxSongApiService.fetchLiveSyncedLyrics(song)
+            if (liveLyrics.isNotEmpty()) {
+                _uiState.update { state ->
+                    val updatedCurrent = if (state.currentSong.id == song.id) {
+                        state.currentSong.copy(synchronizedLyrics = liveLyrics)
+                    } else state.currentSong
+                    state.copy(currentSong = updatedCurrent)
+                }
+            }
+        }
 
         // Pre-buffer the next song in queue for zero-latency track transitions
         val activeQueue = _uiState.value.queueSongs
@@ -419,9 +854,10 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleFavorite(songId: String) {
+        var wasAdded = false
         _uiState.update { state ->
             val updated = state.likedSongIds.toMutableSet()
-            val added = if (updated.contains(songId)) {
+            wasAdded = if (updated.contains(songId)) {
                 updated.remove(songId)
                 false
             } else {
@@ -430,10 +866,34 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             state.copy(
                 likedSongIds = updated,
-                toastMessage = if (added) "Added to Favourite Music" else "Removed from Favourites"
+                toastMessage = if (wasAdded) "Added to Favourite Music" else "Removed from Favourites"
             )
         }
         scheduleToastClear()
+
+        // Sync to Firebase Firestore if authenticated with Google
+        val uid = _uiState.value.firebaseUserUid
+        val repo = firebaseRepository
+        if (uid != null && repo != null) {
+            val safeItemId = "fav_${songId.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")}"
+            val song = _uiState.value.allSongs.firstOrNull { it.id == songId } ?: _uiState.value.currentSong
+            viewModelScope.launch {
+                runCatching {
+                    if (wasAdded) {
+                        repo.createCloudItem(
+                            userId = uid,
+                            itemId = safeItemId,
+                            songId = songId,
+                            title = song.title,
+                            artist = song.artist,
+                            category = "favorite"
+                        )
+                    } else {
+                        repo.deleteCloudItem(uid, safeItemId)
+                    }
+                }
+            }
+        }
     }
 
     fun toggleSaveSongToLibrary(song: Song) {
@@ -738,15 +1198,23 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAudioOutputSheetOpen(open: Boolean) {
         val refreshedRoutes = if (open) audioOutputManager.getAvailableOutputRoutes() else _uiState.value.availableAudioOutputs
+        val currentVol = if (open) audioOutputManager.getSystemVolumePercent() else _uiState.value.hardwareVolumePercent
         _uiState.update {
             it.copy(
                 isAudioOutputSheetOpen = open,
-                availableAudioOutputs = refreshedRoutes
+                availableAudioOutputs = refreshedRoutes,
+                hardwareVolumePercent = currentVol
             )
         }
     }
 
     fun selectAudioOutput(deviceName: String) {
+        val matchedRoute = _uiState.value.availableAudioOutputs.firstOrNull {
+            it.name.equals(deviceName, ignoreCase = true)
+        }
+        if (matchedRoute != null) {
+            audioEngine.setPreferredAudioRoute(matchedRoute.id)
+        }
         _uiState.update {
             it.copy(
                 selectedAudioOutput = deviceName,
@@ -854,6 +1322,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     val mergedAllAlbums = (state.allAlbums + liveAlbums).distinctBy { it.title.lowercase().trim() }
                     state.copy(
                         isSearchingOnline = false,
+                        isOfflineMode = false,
                         currentSearchPage = 1,
                         allSongs = mergedAllSongs,
                         allAlbums = mergedAllAlbums,
@@ -862,14 +1331,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             } else {
-                _uiState.update { it.copy(isSearchingOnline = false) }
+                _uiState.update {
+                    it.copy(
+                        isSearchingOnline = false,
+                        isOfflineMode = !checkNetworkAvailable()
+                    )
+                }
             }
         }
     }
 
-    /**
-     * Loads the next page (40 more songs per click) from the live API so the user can browse unlimited songs.
-     */
     fun loadMoreSongsFromApi(customQuery: String? = null) {
         if (_uiState.value.isLoadingMoreSongs) return
         val nextPage = _uiState.value.currentSearchPage + 1
@@ -915,9 +1386,6 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Fetches full album tracklist from the API when opening an album detail view.
-     */
     fun ensureAlbumTracksLoaded(album: Album) {
         viewModelScope.launch {
             val existingCount = _uiState.value.allSongs.count {
@@ -1036,7 +1504,6 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 return
             }
         }
-        // If not yet downloaded, download directly into targetFolderName
         downloadSong(song, targetFolderName)
     }
 
@@ -1095,7 +1562,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             artworkRes = sampleArtwork,
             primaryColor = com.example.ui.theme.ElectricBlue,
             secondaryColor = com.example.ui.theme.AmbientViolet,
-            songIds = _uiState.value.allSongs.take(5).map { it.id }
+            songIds = _uiState.value.allSongs.take(8).map { it.id },
+            artworkUrl = _uiState.value.allAlbums.firstOrNull()?.artworkUrl
         )
         _uiState.update { state ->
             state.copy(
@@ -1107,6 +1575,23 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         scheduleToastClear()
+
+        // Sync custom playlist to Cloud Firestore if authenticated with Google
+        val uid = _uiState.value.firebaseUserUid
+        if (uid != null) {
+            viewModelScope.launch {
+                runCatching {
+                    firebaseRepository?.createCloudItem(
+                        userId = uid,
+                        itemId = newId,
+                        songId = newId,
+                        title = cleanTitle,
+                        artist = "${newPlaylist.songIds.size} tracks • Custom Playlist",
+                        category = "ai_playlist"
+                    )
+                }
+            }
+        }
     }
 
     // Account & Profile Actions
@@ -1179,8 +1664,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun signOutAccount() {
+        viewModelScope.launch {
+            firebaseRepository?.signOut(getApplication())
+        }
         _uiState.update { state ->
             state.copy(
+                firebaseUserUid = null,
+                firebaseUserEmail = null,
+                firebaseUserDisplayName = null,
+                cloudSyncedItemsCount = 0,
                 userProfile = state.userProfile.copy(isProfileSetUp = false),
                 activeAccountSubModal = null
             )
@@ -1363,8 +1855,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                 val duration = _uiState.value.currentSong.durationSeconds.coerceAtLeast(1)
                 val prevSec = _uiState.value.currentPositionSeconds
                 val streamSec = audioEngine.getCurrentPositionSeconds()
-                // Use hardware MediaPlayer position when advancing, or smoothly increment by 1s
-                val nextSec = if (streamSec != null && streamSec >= prevSec) {
+                // Strict '>' check so streamSec == 0 at startup never freezes the seekbar at 0:00
+                val nextSec = if (streamSec != null && streamSec > prevSec) {
                     streamSec
                 } else {
                     prevSec + 1
@@ -1380,6 +1872,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
+        audioOutputManager.unregisterAudioDisconnectListener()
         audioEngine.stop()
         mediaNotificationHelper.cancelNotification()
     }

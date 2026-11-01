@@ -79,6 +79,9 @@ fun AccountScreen(
     onSelectStreamingQuality: (String) -> Unit = {},
     onToggleSpatialAudio: (Boolean) -> Unit = {},
     onSignOutConfirm: () -> Unit = {},
+    firebaseUserEmail: String? = null,
+    cloudSyncedItemsCount: Int = 0,
+    onGoogleSignInClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val auraColors = LocalAuraColors.current
@@ -132,6 +135,95 @@ fun AccountScreen(
                         onAppsWithAccessClick = { onOpenSubModal("apps_access") },
                         onSignOutClick = { onOpenSubModal("sign_out") }
                     )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Firebase Cloud Sync & Google Sign-In Card
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(auraColors.cardSurface)
+                            .padding(16.dp)
+                            .testTag("firebase_cloud_sync_card")
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "FIREBASE CLOUD SYNC",
+                                    color = ElectricBlue,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.7.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (firebaseUserEmail != null) {
+                                        "Connected: $firebaseUserEmail"
+                                    } else {
+                                        "Sync Favourites, AI Moods & Playlists"
+                                    },
+                                    color = auraColors.textPrimary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (firebaseUserEmail != null) {
+                                        "$cloudSyncedItemsCount items backed up in Cloud Firestore"
+                                    } else {
+                                        "Sign in with Google to back up your library across devices"
+                                    },
+                                    color = auraColors.textSecondary,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 12.5.sp
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        if (firebaseUserEmail == null) {
+                            Button(
+                                onClick = onGoogleSignInClick,
+                                colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp)
+                                    .testTag("google_sign_in_button")
+                            ) {
+                                Text(
+                                    text = "Sign in with Google (Cloud Sync)",
+                                    color = Color.White,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 14.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = onSignOutConfirm,
+                                colors = ButtonDefaults.buttonColors(containerColor = DestructiveRed.copy(alpha = 0.18f)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                                    .testTag("google_sign_out_button")
+                            ) {
+                                Text(
+                                    text = "Disconnect Google Cloud Session",
+                                    color = DestructiveRed,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
 
                 item(key = "account_footer_info") {

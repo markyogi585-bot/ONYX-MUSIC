@@ -879,6 +879,12 @@ fun LyricsScreen(
     onBackClick: () -> Unit,
     onSeekTo: (Int) -> Unit,
     onTogglePlayPause: () -> Unit,
+    isGeneratingAiLyrics: Boolean = false,
+    showTranslation: Boolean = true,
+    aiLyricsMeaning: String = "",
+    aiLyricsMoodTag: String = "",
+    onVerifyWithAi: () -> Unit = {},
+    onToggleTranslation: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val lyrics = song.synchronizedLyrics
@@ -992,7 +998,95 @@ fun LyricsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Gemini AI Lyrics Verification & Bilingual Translation Control Bar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(50))
+                            .background(ElectricBlue.copy(alpha = 0.24f))
+                            .border(0.8.dp, ElectricBlue.copy(alpha = 0.65f), RoundedCornerShape(50))
+                            .clickable(enabled = !isGeneratingAiLyrics) { onVerifyWithAi() }
+                            .padding(horizontal = 14.dp, vertical = 9.dp)
+                            .testTag("lyrics_ai_verify_button"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isGeneratingAiLyrics) "Gemini AI Verifying Lyrics..." else "✨ Gemini AI Verify & Translate",
+                            color = Color.White,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                if (showTranslation) Color.White.copy(alpha = 0.22f)
+                                else Color.White.copy(alpha = 0.10f)
+                            )
+                            .border(0.8.dp, GlassBorderSubtle, RoundedCornerShape(50))
+                            .clickable { onToggleTranslation() }
+                            .padding(horizontal = 14.dp, vertical = 9.dp)
+                            .testTag("lyrics_translation_toggle"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (showTranslation) "EN Subtitles: ON" else "EN Subtitles: OFF",
+                            color = TextPrimaryWhite,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                if (aiLyricsMeaning.isNotBlank() || aiLyricsMoodTag.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.White.copy(alpha = 0.10f))
+                            .border(0.6.dp, GlassBorderSubtle, RoundedCornerShape(14.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                            .testTag("lyrics_ai_meaning_card")
+                    ) {
+                        Column {
+                            if (aiLyricsMoodTag.isNotBlank()) {
+                                Text(
+                                    text = "GEMINI AI ANALYSIS • ${aiLyricsMoodTag.uppercase()}",
+                                    color = ElectricBlue,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.6.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+                            if (aiLyricsMeaning.isNotBlank()) {
+                                Text(
+                                    text = aiLyricsMeaning,
+                                    color = TextPrimaryWhite.copy(alpha = 0.88f),
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 12.5.sp,
+                                    lineHeight = 17.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 if (song.hasSynchronizedLyrics) {
                     LazyColumn(
@@ -1000,7 +1094,7 @@ fun LyricsScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("lyrics_list"),
-                        contentPadding = PaddingValues(top = 24.dp, bottom = 140.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 140.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
                         itemsIndexed(lyrics, key = { idx, _ -> "${song.id}_lyric_$idx" }) { index, line ->
@@ -1016,14 +1110,7 @@ fun LyricsScreen(
                                 label = "lyric_scale_$index"
                             )
 
-                            Text(
-                                text = line.text,
-                                color = lineColor,
-                                fontFamily = InterFontFamily,
-                                fontSize = if (isCurrent) 24.sp else 19.sp,
-                                fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Medium,
-                                lineHeight = if (isCurrent) 31.sp else 26.sp,
-                                letterSpacing = (-0.3).sp,
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .graphicsLayer {
@@ -1038,7 +1125,28 @@ fun LyricsScreen(
                                     }
                                     .padding(vertical = 6.dp, horizontal = 4.dp)
                                     .testTag("lyric_line_$index")
-                            )
+                            ) {
+                                Text(
+                                    text = line.text,
+                                    color = lineColor,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = if (isCurrent) 24.sp else 19.sp,
+                                    fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Medium,
+                                    lineHeight = if (isCurrent) 31.sp else 26.sp,
+                                    letterSpacing = (-0.3).sp
+                                )
+                                if (showTranslation && !line.translatedText.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Text(
+                                        text = line.translatedText,
+                                        color = if (isCurrent) ElectricBlue.copy(alpha = 0.95f) else Color.White.copy(alpha = 0.30f),
+                                        fontFamily = InterFontFamily,
+                                        fontSize = if (isCurrent) 14.5.sp else 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        lineHeight = 19.sp
+                                    )
+                                }
+                            }
                         }
                     }
                 } else {
@@ -1079,7 +1187,7 @@ fun LyricsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Time-synced lyrics are not available for \"${song.title}\" by ${song.artist}. Enjoy the spatial lossless master.",
+                                    text = "Time-synced lyrics are not available for \"${song.title}\" by ${song.artist}. Tap 'Gemini AI Verify & Translate' above to generate time-synced lyrics.",
                                     color = TextSecondaryGrey,
                                     fontFamily = InterFontFamily,
                                     fontSize = 14.sp,
@@ -2240,9 +2348,16 @@ fun AudioOutputOverlaySheet(
     availableRoutes: List<AudioOutputRoute>,
     selectedOutput: String,
     onSelectOutput: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    hardwareVolumePercent: Int = 78,
+    earbudNoiseControlMode: String = "Adaptive ANC",
+    autoPauseOnDisconnect: Boolean = true,
+    onVolumeChange: (Int) -> Unit = {},
+    onSelectNoiseControlMode: (String) -> Unit = {},
+    onToggleAutoPauseDisconnect: () -> Unit = {}
 ) {
     val auraColors = LocalAuraColors.current
+    val noiseModes = listOf("Adaptive ANC", "Transparency", "Spatial Head-Track", "Off")
 
     Box(
         modifier = Modifier
@@ -2267,7 +2382,7 @@ fun AudioOutputOverlaySheet(
                     .padding(horizontal = 22.dp, vertical = 20.dp)
             ) {
                 Text(
-                    text = "Audio Output",
+                    text = "Audio Output & Earbuds Control",
                     color = auraColors.textPrimary,
                     fontFamily = InterFontFamily,
                     fontSize = 18.sp,
@@ -2334,6 +2449,124 @@ fun AudioOutputOverlaySheet(
                             )
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = auraColors.divider, thickness = 0.5.dp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // System Hardware Volume Slider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Hardware Output Volume",
+                        color = auraColors.textPrimary,
+                        fontFamily = InterFontFamily,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "$hardwareVolumePercent%",
+                        color = ElectricBlue,
+                        fontFamily = InterFontFamily,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Slider(
+                    value = hardwareVolumePercent.toFloat(),
+                    onValueChange = { onVolumeChange(it.toInt()) },
+                    valueRange = 0f..100f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = ElectricBlue,
+                        activeTrackColor = ElectricBlue,
+                        inactiveTrackColor = auraColors.glassBorder
+                    ),
+                    modifier = Modifier.testTag("audio_output_volume_slider")
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Earbuds / Headphones Acoustic Mode Chips
+                Text(
+                    text = "EARBUDS & HEADPHONES ACOUSTIC MODE",
+                    color = auraColors.textSecondary,
+                    fontFamily = InterFontFamily,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.6.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    noiseModes.forEach { mode ->
+                        val active = earbudNoiseControlMode == mode
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (active) ElectricBlue
+                                    else auraColors.cardSurface
+                                )
+                                .clickable { onSelectNoiseControlMode(mode) }
+                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = mode,
+                                color = if (active) Color.White else auraColors.textPrimary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 11.sp,
+                                fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Auto-Pause on Earbuds Disconnect Toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(auraColors.cardSurface)
+                        .clickable { onToggleAutoPauseDisconnect() }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Auto-Pause on Earbud Disconnect",
+                            color = auraColors.textPrimary,
+                            fontFamily = InterFontFamily,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Instantly pauses music when Bluetooth or wired headphones unplug",
+                            color = auraColors.textSecondary,
+                            fontFamily = InterFontFamily,
+                            fontSize = 11.5.sp
+                        )
+                    }
+                    Text(
+                        text = if (autoPauseOnDisconnect) "ON" else "OFF",
+                        color = if (autoPauseOnDisconnect) ElectricBlue else auraColors.textSecondary,
+                        fontFamily = InterFontFamily,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

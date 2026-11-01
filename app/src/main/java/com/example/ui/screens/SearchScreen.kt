@@ -66,7 +66,8 @@ private data class BrowseCategoryTile(
     val title: String,
     val filterKey: String,
     val artworkRes: Int,
-    val gradientColor: Color
+    val gradientColor: Color,
+    val artworkUrl: String
 )
 
 @Composable
@@ -94,21 +95,84 @@ fun SearchScreen(
     isLoadingMoreSongs: Boolean = false,
     currentSearchPage: Int = 1,
     onLoadMoreSongs: () -> Unit = {},
+    isOfflineMode: Boolean = false,
+    downloadedSongsCount: Int = 0,
+    onToggleOfflineFilter: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val auraColors = LocalAuraColors.current
 
     val browseTiles = listOf(
-        BrowseCategoryTile("Happy Diwali", "Happy Diwali", R.drawable.img_cat_diwali, Color(0xFFB45309)),
-        BrowseCategoryTile("Bollywood", "Bollywood", R.drawable.img_cat_bollywood, Color(0xFFBE185D)),
-        BrowseCategoryTile("Punjabi", "Punjabi", R.drawable.img_cat_punjabi, Color(0xFFEA580C)),
-        BrowseCategoryTile("Tamil", "Tamil", R.drawable.img_cat_tamil, Color(0xFF047857)),
-        BrowseCategoryTile("Pop", "Pop", R.drawable.img_cat_pop, Color(0xFFDB2777)),
-        BrowseCategoryTile("Telugu", "Telugu", R.drawable.img_cat_telugu, Color(0xFF4338CA)),
-        BrowseCategoryTile("Onyx Music Radio", "Radio", R.drawable.img_cat_radio, Color(0xFFE11D48)),
-        BrowseCategoryTile("Charts", "Charts", R.drawable.img_cat_charts, Color(0xFF7E22CE)),
-        BrowseCategoryTile("Sing", "Sing", R.drawable.img_cat_sing, Color(0xFFF43F5E)),
-        BrowseCategoryTile("Spatial Audio", "Spatial Audio", R.drawable.img_cat_spatial, Color(0xFF0284C7))
+        BrowseCategoryTile(
+            title = "Happy Diwali",
+            filterKey = "Bollywood Festive",
+            artworkRes = R.drawable.img_cat_diwali,
+            gradientColor = Color(0xFFB45309),
+            artworkUrl = "https://c.saavncdn.com/191/Kesariya-From-Brahmastra-Hindi-2022-20220717092820-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Bollywood",
+            filterKey = "Bollywood",
+            artworkRes = R.drawable.img_cat_bollywood,
+            gradientColor = Color(0xFFBE185D),
+            artworkUrl = "https://c.saavncdn.com/807/Pathaan-Hindi-2022-20221222104158-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Punjabi",
+            filterKey = "Punjabi",
+            artworkRes = R.drawable.img_cat_punjabi,
+            gradientColor = Color(0xFFEA580C),
+            artworkUrl = "https://c.saavncdn.com/734/Champagne-Talk-Punjabi-2022-20221008011951-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Tamil",
+            filterKey = "Tamil",
+            artworkRes = R.drawable.img_cat_tamil,
+            gradientColor = Color(0xFF047857),
+            artworkUrl = "https://c.saavncdn.com/026/Chaleya-From-Jawan-Hindi-2023-20230814014337-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Pop",
+            filterKey = "Pop",
+            artworkRes = R.drawable.img_cat_pop,
+            gradientColor = Color(0xFFDB2777),
+            artworkUrl = "https://c.saavncdn.com/406/Dhurandhar-Title-Track-From-Dhurandhar-Hindi-2025-20251016190927-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Telugu",
+            filterKey = "Telugu",
+            artworkRes = R.drawable.img_cat_telugu,
+            gradientColor = Color(0xFF4338CA),
+            artworkUrl = "https://c.saavncdn.com/584/Heeriye-feat-Arijit-Singh-Hindi-2023-20230925050405-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Onyx Music Radio",
+            filterKey = "Arijit Singh",
+            artworkRes = R.drawable.img_cat_radio,
+            gradientColor = Color(0xFFE11D48),
+            artworkUrl = "https://c.saavncdn.com/114/Apna-Bana-Le-From-Bhediya-Hindi-2022-20221105093003-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Charts",
+            filterKey = "Top 50 Bollywood",
+            artworkRes = R.drawable.img_cat_charts,
+            gradientColor = Color(0xFF7E22CE),
+            artworkUrl = "https://c.saavncdn.com/000/Stree-2-Hindi-2024-20240809153827-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Sing",
+            filterKey = "Shreya Ghoshal",
+            artworkRes = R.drawable.img_cat_sing,
+            gradientColor = Color(0xFFF43F5E),
+            artworkUrl = "https://c.saavncdn.com/238/Satranga-From-ANIMAL-Hindi-2023-20231027131032-500x500.jpg"
+        ),
+        BrowseCategoryTile(
+            title = "Spatial Audio",
+            filterKey = "Dhurandhar",
+            artworkRes = R.drawable.img_cat_spatial,
+            gradientColor = Color(0xFF0284C7),
+            artworkUrl = "https://c.saavncdn.com/307/Gehra-Hua-From-Dhurandhar-Hindi-2025-20251127143154-500x500.jpg"
+        )
     )
 
     LazyColumn(
@@ -302,7 +366,10 @@ fun SearchScreen(
             }
         } else {
             item(key = "browse_categories_header") {
-                MusicSectionHeader(title = "Browse Categories")
+                MusicSectionHeader(
+                    title = "Browse Categories",
+                    subtitle = "Live 500x500 API covers & 320kbps catalogs"
+                )
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
@@ -334,7 +401,9 @@ fun SearchScreen(
                                 .testTag("search_category_${tile.title.lowercase().replace(" ", "_")}")
                         ) {
                             AsyncImage(
-                                model = tile.artworkRes,
+                                model = tile.artworkUrl,
+                                placeholder = androidx.compose.ui.res.painterResource(tile.artworkRes),
+                                error = androidx.compose.ui.res.painterResource(tile.artworkRes),
                                 contentDescription = tile.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
@@ -363,6 +432,55 @@ fun SearchScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            if (isOfflineMode || downloadedSongsCount > 0) {
+                item(key = "search_offline_banner_section") {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isOfflineMode) Color(0xFF1E3A8A).copy(alpha = 0.35f)
+                                else ElectricBlue.copy(alpha = 0.12f)
+                            )
+                            .border(
+                                0.7.dp,
+                                ElectricBlue.copy(alpha = 0.45f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { onToggleOfflineFilter() }
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                            .testTag("search_offline_mode_banner"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isOfflineMode) "Offline Mode Active • Local Playback" else "Offline Ready • $downloadedSongsCount Songs Downloaded",
+                                color = TextPrimaryWhite,
+                                fontFamily = InterFontFamily,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Tap to toggle offline-only filter for zero-network listening",
+                                color = auraColors.textSecondary,
+                                fontFamily = InterFontFamily,
+                                fontSize = 11.5.sp
+                            )
+                        }
+                        Text(
+                            text = if (isOfflineMode) "ONLINE" else "OFFLINE",
+                            color = ElectricBlue,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

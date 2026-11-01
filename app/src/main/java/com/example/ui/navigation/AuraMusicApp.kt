@@ -225,7 +225,18 @@ fun AuraMusicApp(
                             onMoreOptionsClick = musicViewModel::openTrackOptions,
                             onSeeAllClick = { sectionKey ->
                                 navController.navigate("section_all/$sectionKey") { launchSingleTop = true }
-                            }
+                            },
+                            availableMoods = uiState.availableMoods,
+                            selectedMood = uiState.selectedMood,
+                            aiMoodCuratorNote = uiState.aiMoodCuratorNote,
+                            aiMoodTargetBpm = "${uiState.aiMoodTargetBpm} BPM",
+                            aiSuggestedSongs = uiState.aiSuggestedSongs,
+                            isGeneratingMoodMix = uiState.isGeneratingMoodMix,
+                            onSelectMood = musicViewModel::selectMood,
+                            onPlayAiMoodMix = musicViewModel::playAiMoodMix,
+                            isOfflineMode = uiState.isOfflineMode,
+                            offlineOnlyFilterEnabled = uiState.offlineOnlyFilterEnabled,
+                            onToggleOfflineFilter = musicViewModel::toggleOfflineOnlyFilter
                         )
                     }
                 }
@@ -356,7 +367,10 @@ fun AuraMusicApp(
                             isSearchingOnline = uiState.isSearchingOnline,
                             isLoadingMoreSongs = uiState.isLoadingMoreSongs,
                             currentSearchPage = uiState.currentSearchPage,
-                            onLoadMoreSongs = { musicViewModel.loadMoreSongsFromApi() }
+                            onLoadMoreSongs = { musicViewModel.loadMoreSongsFromApi() },
+                            isOfflineMode = uiState.isOfflineMode || uiState.offlineOnlyFilterEnabled,
+                            downloadedSongsCount = uiState.downloadedTracks.size,
+                            onToggleOfflineFilter = musicViewModel::toggleOfflineOnlyFilter
                         )
                     }
                 }
@@ -516,7 +530,13 @@ fun AuraMusicApp(
                         currentPositionSeconds = uiState.currentPositionSeconds,
                         onBackClick = { navController.safeNavigateBack() },
                         onSeekTo = musicViewModel::seekTo,
-                        onTogglePlayPause = musicViewModel::togglePlayPause
+                        onTogglePlayPause = musicViewModel::togglePlayPause,
+                        isGeneratingAiLyrics = uiState.isGeneratingAiLyrics,
+                        showTranslation = uiState.showLyricsTranslation,
+                        aiLyricsMeaning = uiState.aiLyricsMeaningMap[uiState.currentSong.id].orEmpty(),
+                        aiLyricsMoodTag = uiState.aiLyricsMoodTagMap[uiState.currentSong.id].orEmpty(),
+                        onVerifyWithAi = musicViewModel::verifyLyricsWithGeminiAi,
+                        onToggleTranslation = musicViewModel::toggleLyricsTranslation
                     )
                 }
 
@@ -593,6 +613,7 @@ fun AuraMusicApp(
 
                 // 14. ACCOUNT ROUTE
                 composable("account") {
+                    val activityContext = androidx.compose.ui.platform.LocalContext.current
                     AccountScreen(
                         userProfile = uiState.userProfile,
                         streamingQualityLabel = uiState.persistedSettings.streamingQuality,
@@ -611,7 +632,14 @@ fun AuraMusicApp(
                         onToggleFriendNotif = musicViewModel::toggleNotificationsFriendActivity,
                         onSelectStreamingQuality = musicViewModel::setStreamingQuality,
                         onToggleSpatialAudio = musicViewModel::setSpatialAudio,
-                        onSignOutConfirm = musicViewModel::signOutAccount
+                        onSignOutConfirm = musicViewModel::signOutAccount,
+                        firebaseUserEmail = uiState.firebaseUserEmail,
+                        cloudSyncedItemsCount = uiState.cloudSyncedItemsCount,
+                        onGoogleSignInClick = {
+                            (activityContext as? android.app.Activity)?.let { act ->
+                                musicViewModel.signInWithGoogle(act)
+                            }
+                        }
                     )
                 }
             }
@@ -788,7 +816,15 @@ fun AuraMusicApp(
                 availableRoutes = uiState.availableAudioOutputs,
                 selectedOutput = uiState.selectedAudioOutput,
                 onSelectOutput = musicViewModel::selectAudioOutput,
-                onDismiss = { musicViewModel.setAudioOutputSheetOpen(false) }
+                onDismiss = { musicViewModel.setAudioOutputSheetOpen(false) },
+                hardwareVolumePercent = uiState.hardwareVolumePercent,
+                earbudNoiseControlMode = uiState.earbudNoiseControlMode,
+                autoPauseOnDisconnect = uiState.autoPauseOnEarbudDisconnect,
+                onVolumeChange = musicViewModel::setHardwareVolumePercent,
+                onSelectNoiseControlMode = musicViewModel::setEarbudNoiseControlMode,
+                onToggleAutoPauseDisconnect = {
+                    musicViewModel.setAutoPauseOnEarbudDisconnect(!uiState.autoPauseOnEarbudDisconnect)
+                }
             )
         }
 

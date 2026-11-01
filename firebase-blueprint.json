@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "CloudMusicItem": {
+      "title": "Cloud Music Item",
+      "description": "User-owned cloud-synced favorite song, mood profile, or AI-curated playlist item",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner"
+        },
+        "songId": {
+          "type": "string",
+          "description": "Unique identifier of the song or mood item"
+        },
+        "title": {
+          "type": "string",
+          "description": "Display title of the song or mood recommendation"
+        },
+        "artist": {
+          "type": "string",
+          "description": "Artist name or mood subtitle"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category tag such as favorite, mood, or ai_playlist"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the item was synced"
+        }
+      },
+      "required": ["userId", "songId", "title", "artist", "category", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/cloud_items/{itemId}": {
+      "schema": { "$ref": "#/entities/CloudMusicItem" },
+      "description": "User-scoped cloud music items (favorites, moods, and AI recommendations)"
+    }
+  }
+}

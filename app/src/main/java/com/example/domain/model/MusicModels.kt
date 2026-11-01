@@ -25,7 +25,8 @@ enum class LibrarySortOrder(val label: String) {
 
 data class LyricLine(
     val timestampSec: Int,
-    val text: String
+    val text: String,
+    val translatedText: String? = null
 )
 
 /**
