@@ -20,12 +20,15 @@ import com.example.data.preferences.PersistedSettings
 import com.example.data.preferences.ThemeMode
 import com.example.data.preferences.UserPreferencesRepository
 import com.example.data.preferences.userPreferencesDataStore
+import com.example.data.remote.LiveTvService
 import com.example.data.remote.OnyxSongApiService
+import com.example.data.video.LiveStreamPlayerEngine
 import com.example.domain.model.Album
 import com.example.domain.model.AppTab
 import com.example.domain.model.ArtistProfile
 import com.example.domain.model.AudioOutputRoute
 import com.example.domain.model.LibrarySortOrder
+import com.example.domain.model.LiveChannel
 import com.example.domain.model.Playlist
 import com.example.domain.model.RadioStation
 import com.example.domain.model.RepeatMode
@@ -79,6 +82,16 @@ data class MusicUiState(
     val allArtists: List<ArtistProfile> = emptyList(),
     val radioStations: List<RadioStation> = emptyList(),
     val recentlyPlayedStations: List<RadioStation> = emptyList(),
+
+    // Live TV Streaming State (ExoPlayer & Freelivtv M3U API)
+    val liveChannels: List<LiveChannel> = emptyList(),
+    val filteredLiveChannels: List<LiveChannel> = emptyList(),
+    val liveCategories: List<String> = listOf("All", "Music", "Entertainment", "Movies", "Sports", "News", "Punjabi"),
+    val selectedLiveCategory: String = "All",
+    val liveSearchQuery: String = "",
+    val isFetchingLiveChannels: Boolean = false,
+    val activeLiveChannel: LiveChannel? = null,
+    val isLiveFullscreen: Boolean = false,
 
     // Moods & Gemini AI Smart Suggestions State
     val availableMoods: List<String> = listOf(
@@ -216,6 +229,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val initialArtists = catalogUseCase.getAllArtists()
     private val initialStations = catalogUseCase.getRadioStations()
     private val initialRoutes = audioOutputManager.getAvailableOutputRoutes()
+    val livePlayerEngine = LiveStreamPlayerEngine(application.applicationContext)
+    private val initialLiveChannels = LiveTvService.getFallbackChannels()
 
     private val _uiState = MutableStateFlow(
         MusicUiState(
@@ -245,6 +260,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             allArtists = initialArtists,
             radioStations = initialStations,
             recentlyPlayedStations = initialStations.take(3),
+            liveChannels = initialLiveChannels,
+            filteredLiveChannels = initialLiveChannels,
             aiSuggestedSongs = initialSongs.take(8),
             currentSong = initialSongs.first(),
             queueSongs = initialSongs,
@@ -387,6 +404,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         refreshLiveCatalogFromApi()
+        loadLiveChannels()
     }
 
     private fun checkNetworkAvailable(): Boolean {
@@ -2058,10 +2076,87 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun loadLiveChannels(forceRefresh: Boolean = false) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isFetchingLiveChannels = true) }
+            val channels = LiveTvService.fetchLiveChannels(getApplication<Application>().applicationContext, forceRefresh)
+            val categories = mutableListOf("All")
+            channels.map { it.category }.distinct().forEach { cat ->
+                if (cat.isNotBlank() && !categories.contains(cat)) {
+                    categories.add(cat)
+                }
+            }
+            _uiState.update { state ->
+                val filtered = applyLiveFilter(channels, state.selectedLiveCategory, state.liveSearchQuery)
+                state.copy(
+                    liveChannels = channels,
+                    filteredLiveChannels = filtered,
+                    liveCategories = if (categories.size > 1) categories else state.liveCategories,
+                    isFetchingLiveChannels = false
+                )
+            }
+        }
+    }
+
+    fun selectLiveCategory(category: String) {
+        _uiState.update { state ->
+            val filtered = applyLiveFilter(state.liveChannels, category, state.liveSearchQuery)
+            state.copy(
+                selectedLiveCategory = category,
+                filteredLiveChannels = filtered
+            )
+        }
+    }
+
+    fun updateLiveSearchQuery(query: String) {
+        _uiState.update { state ->
+            val filtered = applyLiveFilter(state.liveChannels, state.selectedLiveCategory, query)
+            state.copy(
+                liveSearchQuery = query,
+                filteredLiveChannels = filtered
+            )
+        }
+    }
+
+    private fun applyLiveFilter(channels: List<LiveChannel>, category: String, query: String): List<LiveChannel> {
+        return channels.filter { channel ->
+            val matchesCat = category == "All" || channel.category.equals(category, ignoreCase = true)
+            val matchesQuery = query.isBlank() ||
+                channel.name.contains(query, ignoreCase = true) ||
+                channel.category.contains(query, ignoreCase = true)
+            matchesCat && matchesQuery
+        }
+    }
+
+    fun playLiveChannel(channel: LiveChannel) {
+        if (_uiState.value.isPlaying) {
+            audioEngine.pause()
+            progressJob?.cancel()
+            _uiState.update { it.copy(isPlaying = false) }
+            mediaNotificationHelper.updatePlaybackNotification(_uiState.value.currentSong, false)
+        }
+        _uiState.update { it.copy(activeLiveChannel = channel) }
+        livePlayerEngine.playChannel(channel)
+    }
+
+    fun closeLivePlayer() {
+        livePlayerEngine.stop()
+        _uiState.update { it.copy(activeLiveChannel = null, isLiveFullscreen = false) }
+    }
+
+    fun toggleLiveFullscreen() {
+        _uiState.update { it.copy(isLiveFullscreen = !it.isLiveFullscreen) }
+    }
+
+    fun setLiveFullscreen(fullscreen: Boolean) {
+        _uiState.update { it.copy(isLiveFullscreen = fullscreen) }
+    }
+
     override fun onCleared() {
         super.onCleared()
         audioOutputManager.unregisterAudioDisconnectListener()
         audioEngine.stop()
+        livePlayerEngine.release()
         mediaNotificationHelper.cancelNotification()
     }
 }

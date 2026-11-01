@@ -68,6 +68,7 @@ import com.example.ui.screens.NowPlayingScreen
 import com.example.ui.screens.OnyxSplashOverlay
 import com.example.ui.screens.PlaylistDetailScreen
 import com.example.ui.screens.QueueScreen
+import com.example.ui.screens.LiveTvScreen
 import com.example.ui.screens.RadioScreen
 import com.example.ui.screens.ReportConcernModal
 import com.example.ui.screens.SaveToFolderModalSheet
@@ -276,17 +277,29 @@ fun AuraMusicApp(
                     }
                 }
 
-                // 3. RADIO SCREEN — Dark Cinematic Deep Purple & Midnight Blue Ambient Gradients
+                // 3. LIVE TV SCREEN — 24/7 Buffer-Free Streaming TV with ExoPlayer & Freelivtv M3U
                 composable(AppTab.RADIO.route) {
                     OnyxDynamicBackground(
                         screenType = ScreenBackgroundType.RADIO,
-                        artworkRes = uiState.radioStations.firstOrNull()?.artworkRes ?: 0
+                        artworkRes = 0
                     ) {
-                        RadioScreen(
-                            stations = uiState.radioStations,
-                            recentlyPlayedStations = uiState.recentlyPlayedStations,
+                        LiveTvScreen(
+                            channels = uiState.liveChannels,
+                            filteredChannels = uiState.filteredLiveChannels,
+                            categories = uiState.liveCategories,
+                            selectedCategory = uiState.selectedLiveCategory,
+                            searchQuery = uiState.liveSearchQuery,
+                            isFetching = uiState.isFetchingLiveChannels,
+                            activeChannel = uiState.activeLiveChannel,
+                            isFullscreen = uiState.isLiveFullscreen,
+                            playerEngine = musicViewModel.livePlayerEngine,
                             listState = radioListState,
-                            onPlayStation = musicViewModel::playRadioStation
+                            onSearchQueryChange = musicViewModel::updateLiveSearchQuery,
+                            onSelectCategory = musicViewModel::selectLiveCategory,
+                            onPlayChannel = musicViewModel::playLiveChannel,
+                            onClosePlayer = musicViewModel::closeLivePlayer,
+                            onToggleFullscreen = musicViewModel::toggleLiveFullscreen,
+                            onRefresh = { musicViewModel.loadLiveChannels(forceRefresh = true) }
                         )
                     }
                 }

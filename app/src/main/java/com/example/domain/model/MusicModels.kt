@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 enum class AppTab(val route: String, val label: String) {
     HOME("home", "Home"),
     NEW("new", "New"),
-    RADIO("radio", "Radio"),
+    RADIO("live", "Live"),
     LIBRARY("library", "Library"),
     SEARCH("search", "Search")
 }

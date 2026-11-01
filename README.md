@@ -60,6 +60,13 @@
 - **50+ Songs in Inbuilt Playlists**: Pre-curated and live-expanded playlists for *Dhurandhar*, *Bollywood Hits*, *Punjabi GOAT*, and *Midnight Drive*.
 - **Seamless Offline Mode Banner**: Detects network status in real time and lets users filter or play cached MP4 tracks & offline synth tracks without interruption.
 
+### 7. 📺 Live TV Streaming Engine (`LiveTvScreen` + `androidx.media3.exoplayer` + Freelivtv API)
+- **Live Tab Transformation**: Replaced static Radio with a full-fledged Live TV broadcasting hub (`https://main.freelivtv.workers.dev/provider.m3u`).
+- **Buffer-Free ExoPlayer Engine**: Custom `DefaultLoadControl` (2000ms buffer, 500ms initial playback) with HTTP header support (`User-Agent`, session cookies, ClearKey DRM) for ultra-low latency live streaming.
+- **YouTube-Style Instant Playback**: Inline 16:9 player with instant full-screen expansion modal, volume mute controls, and stream reconnect resiliency.
+- **Circular Channel Avatars**: 76dp glowing circular channel avatars at the top (styled like Home's Popular Artists) for 9XM, MTV Beats, Star Plus HD, Zee TV HD, Sony MAX, Aaj Tak, Star Sports, and more.
+- **Horizontal Category Rows & Inbuilt Search**: Dedicated carousels for Music TV, Entertainment, Blockbuster Movies, Sports/Cricket, and 24/7 News with instant live search and category filter chips.
+
 ---
 
 ## 📸 Live Application Screenshots
