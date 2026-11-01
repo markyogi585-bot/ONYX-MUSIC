@@ -9,7 +9,10 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
-/build
+/build/*
+!/build/OnyxMusic.apk
+!/build/app-debug.apk
+!/build/README.md
 /captures
 .externalNativeBuild
 .cxx
