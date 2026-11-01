@@ -94,17 +94,18 @@ data class MusicUiState(
     val searchResultAlbums: List<Album> = emptyList(),
     val searchResultSongs: List<Song> = emptyList(),
     val recentSearches: List<String> = listOf(
-        "Chandani",
-        "Arijit Singh",
-        "Kesariya",
-        "Diljit Dosanjh"
+        "Dhurandhar",
+        "Saiyaara",
+        "Karan Aujla",
+        "Arijit Singh"
     ),
     val trendingSearches: List<String> = listOf(
-        "Chandni",
-        "Tum Hi Ho",
-        "Hass Hass",
-        "B Praak",
-        "Shreya Ghoshal"
+        "Dhurandhar",
+        "Aaj Ki Raat",
+        "Tauba Tauba",
+        "Millionaire",
+        "Raanjhan",
+        "Bhool Bhulaiyaa 3"
     ),
     val selectedLibraryCategory: String = "Albums",
     val librarySortOrder: LibrarySortOrder = LibrarySortOrder.RECENTLY_ADDED,
@@ -195,14 +196,16 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Fetches live songs from https://osint-apis-hub.onrender.com/api/song?key=Titan&song=chandani
-     * on startup and merges them into the active catalog.
+     * Pre-buffers the active catalog tracks and fetches trending 2026 Bollywood, Dhurandhar & Punjabi songs
+     * in parallel on startup so the library is packed with instant-play songs.
      */
     private fun refreshLiveCatalogFromApi() {
+        audioEngine.preloadCatalogSongs(initialSongs.take(6))
         viewModelScope.launch {
-            val apiSongs = OnyxSongApiService.searchSongs("chandani", resolveArtwork = true)
+            val apiSongs = OnyxSongApiService.fetchTrending2026Catalog()
             if (apiSongs.isNotEmpty()) {
-                val apiAlbums = OnyxSongApiService.buildAlbumsFromSongs(apiSongs, "CHANDANI • LIVE STREAM")
+                audioEngine.preloadCatalogSongs(apiSongs.take(4))
+                val apiAlbums = OnyxSongApiService.buildAlbumsFromSongs(apiSongs, "2026 BLOCKBUSTER • LIVE")
                 _uiState.update { state ->
                     val mergedSongs = (state.allSongs + apiSongs)
                         .distinctBy { it.audioUrl ?: it.id }
@@ -211,9 +214,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     state.copy(
                         allSongs = mergedSongs,
                         allAlbums = mergedAlbums,
-                        bestNewSongs = (apiSongs.take(4) + state.bestNewSongs).distinctBy { it.audioUrl ?: it.id }.take(10),
-                        topSongs = (apiSongs.take(3) + state.topSongs).distinctBy { it.audioUrl ?: it.id }.take(8),
-                        popularSongs = (apiSongs.take(4) + state.popularSongs).distinctBy { it.audioUrl ?: it.id }.take(8),
+                        bestNewSongs = (state.bestNewSongs + apiSongs.take(8)).distinctBy { it.audioUrl ?: it.id }.take(16),
+                        topSongs = (state.topSongs + apiSongs.take(6)).distinctBy { it.audioUrl ?: it.id }.take(14),
+                        popularSongs = (state.popularSongs + apiSongs.take(6)).distinctBy { it.audioUrl ?: it.id }.take(14),
                         queueSongs = if (!state.isPlaying) mergedSongs else state.queueSongs,
                         searchResultSongs = if (state.searchQuery.isBlank() && state.selectedSearchCategory == null) {
                             mergedSongs
@@ -286,6 +289,14 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         audioEngine.updateFrequency(song.baseFreqHz)
         mediaNotificationHelper.updatePlaybackNotification(song, true)
         startProgressTicker()
+
+        // Pre-buffer the next song in queue for zero-latency track transitions
+        val activeQueue = _uiState.value.queueSongs
+        val currentIdx = activeQueue.indexOfFirst { it.id == song.id }
+        if (activeQueue.size > 1 && currentIdx >= 0) {
+            val nextInQueue = activeQueue[(currentIdx + 1) % activeQueue.size]
+            audioEngine.prebufferSong(nextInQueue)
+        }
     }
 
     fun playAlbum(album: Album, shuffle: Boolean = false) {
@@ -724,7 +735,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateSearchQuery(query: String) {
-        val (localAlbums, localSongs) = catalogUseCase.searchCatalog(query, _uiState.value.selectedSearchCategory)
+        val (localAlbums, localSongs) = filterInMemoryCatalog(query, _uiState.value.selectedSearchCategory)
         _uiState.update {
             it.copy(
                 searchQuery = query,
@@ -734,7 +745,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         }
         val clean = query.trim()
         if (clean.length >= 2) {
-            triggerOnlineSearch(clean, debounceMs = 320L)
+            triggerOnlineSearch(clean, debounceMs = 160L)
         } else {
             searchJob?.cancel()
             _uiState.update { it.copy(isSearchingOnline = false) }
@@ -744,7 +755,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun submitSearchTerm(term: String) {
         val clean = term.trim()
         if (clean.isEmpty()) return
-        val (localAlbums, localSongs) = catalogUseCase.searchCatalog(clean, _uiState.value.selectedSearchCategory)
+        val (localAlbums, localSongs) = filterInMemoryCatalog(clean, _uiState.value.selectedSearchCategory)
         _uiState.update { state ->
             val updatedRecent = listOf(clean) + state.recentSearches.filterNot { it.equals(clean, ignoreCase = true) }
             state.copy(
@@ -769,7 +780,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectSearchCategory(category: String?) {
         val nextCategory = if (_uiState.value.selectedSearchCategory == category) null else category
-        val (localAlbums, localSongs) = catalogUseCase.searchCatalog(_uiState.value.searchQuery, nextCategory)
+        val (localAlbums, localSongs) = filterInMemoryCatalog(_uiState.value.searchQuery, nextCategory)
         _uiState.update {
             it.copy(
                 selectedSearchCategory = nextCategory,
@@ -781,6 +792,30 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         if (termToQuery.isNotBlank()) {
             triggerOnlineSearch(termToQuery, debounceMs = 0L)
         }
+    }
+
+    private fun filterInMemoryCatalog(query: String, categoryFilter: String?): Pair<List<Album>, List<Song>> {
+        val trimmed = query.trim().lowercase()
+        val state = _uiState.value
+        val filteredAlbums = state.allAlbums.filter { album ->
+            val matchesQuery = trimmed.isEmpty() ||
+                album.title.lowercase().contains(trimmed) ||
+                album.artist.lowercase().contains(trimmed) ||
+                album.categoryTag.lowercase().contains(trimmed)
+            val matchesCat = categoryFilter == null ||
+                album.categoryTag.contains(categoryFilter, ignoreCase = true) ||
+                album.title.contains(categoryFilter, ignoreCase = true)
+            matchesQuery && matchesCat
+        }.ifEmpty {
+            if (categoryFilter != null && trimmed.isEmpty()) state.allAlbums.take(8) else emptyList()
+        }
+        val filteredSongs = state.allSongs.filter { song ->
+            trimmed.isEmpty() ||
+                song.title.lowercase().contains(trimmed) ||
+                song.artist.lowercase().contains(trimmed) ||
+                song.albumTitle.lowercase().contains(trimmed)
+        }
+        return filteredAlbums to filteredSongs
     }
 
     private fun triggerOnlineSearch(query: String, debounceMs: Long) {
@@ -1094,13 +1129,20 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         progressJob = viewModelScope.launch {
             while (isActive && _uiState.value.isPlaying) {
                 delay(1000)
-                val streamSec = audioEngine.getCurrentPositionSeconds()
-                val current = streamSec ?: (_uiState.value.currentPositionSeconds + 1)
+                if (!_uiState.value.isPlaying) break
                 val duration = _uiState.value.currentSong.durationSeconds.coerceAtLeast(1)
-                if (streamSec == null && current >= duration) {
+                val prevSec = _uiState.value.currentPositionSeconds
+                val streamSec = audioEngine.getCurrentPositionSeconds()
+                // Use hardware MediaPlayer position when advancing, or smoothly increment by 1s
+                val nextSec = if (streamSec != null && streamSec >= prevSec) {
+                    streamSec
+                } else {
+                    prevSec + 1
+                }
+                if (nextSec >= duration) {
                     handleTrackCompletion()
                 } else {
-                    _uiState.update { it.copy(currentPositionSeconds = current.coerceIn(0, duration)) }
+                    _uiState.update { it.copy(currentPositionSeconds = nextSec.coerceIn(0, duration)) }
                 }
             }
         }

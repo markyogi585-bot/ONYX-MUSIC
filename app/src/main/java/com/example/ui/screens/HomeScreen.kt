@@ -234,7 +234,7 @@ fun HomeScreen(
         }
 
         items(
-            items = topSongs.take(4),
+            items = topSongs.take(8),
             key = { "top_song_${it.id}" }
         ) { song ->
             MusicListItem(

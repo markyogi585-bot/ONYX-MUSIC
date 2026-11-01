@@ -15,7 +15,7 @@ class GetMusicCatalogUseCase(
         listOf(repository.albums[0], repository.albums[1], repository.albums[11], repository.albums[2])
 
     fun getBestNewSongs(): List<Song> =
-        repository.songs.take(8)
+        repository.songs.take(12)
 
     fun getNewThisWeekAlbums(): List<Album> =
         listOf(repository.albums[3], repository.albums[4], repository.albums[5], repository.albums[6], repository.albums[7])
@@ -28,22 +28,28 @@ class GetMusicCatalogUseCase(
 
     // Home Screen Sections
     fun getTopPicksForYou(): List<Album> =
-        listOf(repository.albums[0], repository.albums[1], repository.albums[2], repository.albums[11])
+        listOf(repository.albums[0], repository.albums[6], repository.albums[1], repository.albums[2], repository.albums[9], repository.albums[4])
 
     fun getRecentlyPlayed(): List<Album> =
-        listOf(repository.albums[0], repository.albums[2], repository.albums[1], repository.albums[6], repository.albums[10])
+        listOf(repository.albums[0], repository.albums[2], repository.albums[1], repository.albums[6], repository.albums[9], repository.albums[10])
 
     fun getMadeForYou(): List<Playlist> =
-        listOf(repository.playlists[0], repository.playlists[1], repository.playlists[2], repository.playlists[4])
+        listOf(repository.playlists[0], repository.playlists[1], repository.playlists[2], repository.playlists[3], repository.playlists[4])
 
     fun getTopSongs(): List<Song> =
         listOf(
             repository.songs[0],
             repository.songs[1],
             repository.songs[2],
+            repository.songs[3],
+            repository.songs[4],
+            repository.songs[5],
+            repository.songs[6],
             repository.songs[7],
+            repository.songs[8],
             repository.songs[11],
-            repository.songs[3]
+            repository.songs[14],
+            repository.songs[16]
         )
 
     fun getNewReleases(): List<Album> =

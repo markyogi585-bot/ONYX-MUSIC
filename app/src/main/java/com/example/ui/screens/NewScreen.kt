@@ -95,7 +95,7 @@ fun NewScreen(
         }
 
         items(
-            items = bestNewSongs.take(5),
+            items = bestNewSongs.take(10),
             key = { "best_song_${it.id}" }
         ) { song ->
             MusicListItem(
