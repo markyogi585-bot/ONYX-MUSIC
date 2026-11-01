@@ -168,6 +168,71 @@ class MusicRepository {
             badgeText = "EARLY ACCESS",
             description = "Timeless acoustic romance led by Arijit Singh's Sajni.",
             artworkUrl = "https://c.saavncdn.com/252/Laapataa-Ladies-Hindi-2024-20241104085935-500x500.jpg"
+        ),
+        Album(
+            id = "alb_adhm",
+            title = "Ae Dil Hai Mushkil",
+            artist = "Pritam, Arijit Singh, Amitabh Bhattacharya",
+            categoryTag = "10-YEAR CLASSIC • ROMANCE",
+            releaseYear = 2016,
+            artworkRes = R.drawable.img_album_velvet_echoes,
+            primaryColor = Color(0xFFE11D48),
+            secondaryColor = Color(0xFF2E0410),
+            badgeText = "DECADE MASTER",
+            description = "Iconic love anthems including Channa Mereya, Bulleya, and Ae Dil Hai Mushkil.",
+            artworkUrl = "https://c.saavncdn.com/608/Ae-Dil-Hai-Mushkil-Deluxe-Edition-Hindi-2016-500x500.jpg"
+        ),
+        Album(
+            id = "alb_kabir_singh",
+            title = "Kabir Singh",
+            artist = "Sachet-Parampara, Mithoon, Vishal Mishra, Arijit Singh",
+            categoryTag = "BOLLYWOOD • ALL-TIME HIT",
+            releaseYear = 2019,
+            artworkRes = R.drawable.img_album_obsidian_hearts,
+            primaryColor = Color(0xFFFF5722),
+            secondaryColor = Color(0xFF260D04),
+            badgeText = "#1 ALL-TIME",
+            description = "Massive heartfelt soundtrack featuring Bekhayali and Tujhe Kitna Chahne Lage.",
+            artworkUrl = "https://c.saavncdn.com/807/Kabir-Singh-Hindi-2019-20240131131003-500x500.jpg"
+        ),
+        Album(
+            id = "alb_shershaah",
+            title = "Shershaah",
+            artist = "Tanishk Bagchi, Jasleen Royal, B Praak, Jubin Nautiyal",
+            categoryTag = "BOLLYWOOD • PATRIOTIC ROMANCE",
+            releaseYear = 2021,
+            artworkRes = R.drawable.img_album_violet_mirage,
+            primaryColor = Color(0xFF10B981),
+            secondaryColor = Color(0xFF042F1C),
+            badgeText = "DIAMOND MASTER",
+            description = "Emotionally soaring anthems featuring Raataan Lambiyan, Ranjha, and Mann Bharryaa 2.0.",
+            artworkUrl = "https://c.saavncdn.com/238/Shershaah-Original-Motion-Picture-Soundtrack--Hindi-2021-20210815181610-500x500.jpg"
+        ),
+        Album(
+            id = "alb_animal",
+            title = "Animal",
+            artist = "JAM8, Harshavardhan Rameshwar, Bhupinder Babbal, Vishal Mishra",
+            categoryTag = "BOLLYWOOD • MASS ACTION",
+            releaseYear = 2023,
+            artworkRes = R.drawable.img_album_nocturne,
+            primaryColor = Color(0xFFDC2626),
+            secondaryColor = Color(0xFF290505),
+            badgeText = "HIGH OCTANE",
+            description = "High-voltage blockbuster hits Arjan Vailly, Pehle Bhi Main, and Satranga.",
+            artworkUrl = "https://c.saavncdn.com/092/ANIMAL-Hindi-2023-20260724191152-500x500.jpg"
+        ),
+        Album(
+            id = "alb_moonchild",
+            title = "MoonChild Era",
+            artist = "Diljit Dosanjh, Intense, Raj Ranjodh",
+            categoryTag = "PUNJABI • GLOBAL BEATS",
+            releaseYear = 2021,
+            artworkRes = R.drawable.img_album_glacial_static,
+            primaryColor = Color(0xFF38BDF8),
+            secondaryColor = Color(0xFF082F49),
+            badgeText = "GLOBAL TREND",
+            description = "Diljit Dosanjh's smooth futuristic Punjabi pop album featuring Lover and Black & White.",
+            artworkUrl = "https://c.saavncdn.com/209/MoonChild-Era-Punjabi-2021-20240715073449-500x500.jpg"
         )
     )
 
@@ -699,6 +764,204 @@ class MusicRepository {
             producer = "Famous Studios",
             artworkUrl = "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d2/89/ac/d289ac98-749e-3822-6b6e-b06aa4815715/859740651597_cover.jpg/600x600bb.jpg",
             audioUrl = "https://aac.saavncdn.com/597/ce842951d6cde3c4355046ca5e250809_320.mp4"
+        ),
+        Song(
+            id = "sng_25",
+            title = "Channa Mereya",
+            artist = "Arijit Singh, Pritam, Amitabh Bhattacharya",
+            albumTitle = "Ae Dil Hai Mushkil",
+            durationSeconds = 289,
+            artworkRes = R.drawable.img_album_velvet_echoes,
+            accentColor = Color(0xFFE11D48),
+            isExplicit = false,
+            trackNumber = 1,
+            baseFreqHz = 293.66f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Channa Mereya",
+                "Arijit Singh, Pritam",
+                "Ae Dil Hai Mushkil",
+                289
+            ),
+            composer = "Pritam",
+            producer = "Sony Music India",
+            artworkUrl = "https://c.saavncdn.com/608/Ae-Dil-Hai-Mushkil-Deluxe-Edition-Hindi-2016-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/608/26836683536476d7c5fda4473c2dce98_320.mp4"
+        ),
+        Song(
+            id = "sng_26",
+            title = "Raataan Lambiyan",
+            artist = "Jubin Nautiyal, Asees Kaur, Tanishk Bagchi",
+            albumTitle = "Shershaah",
+            durationSeconds = 230,
+            artworkRes = R.drawable.img_album_violet_mirage,
+            accentColor = Color(0xFF10B981),
+            isExplicit = false,
+            trackNumber = 1,
+            baseFreqHz = 329.63f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Raataan Lambiyan",
+                "Jubin Nautiyal, Asees Kaur, Tanishk Bagchi",
+                "Shershaah",
+                230
+            ),
+            composer = "Tanishk Bagchi",
+            producer = "Sony Music • Shershaah",
+            artworkUrl = "https://c.saavncdn.com/238/Shershaah-Original-Motion-Picture-Soundtrack--Hindi-2021-20210815181610-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/238/35726d4394604604e961bf5b846870d0_320.mp4"
+        ),
+        Song(
+            id = "sng_27",
+            title = "Apna Bana Le",
+            artist = "Arijit Singh, Sachin-Jigar, Amitabh Bhattacharya",
+            albumTitle = "Bhediya",
+            durationSeconds = 261,
+            artworkRes = R.drawable.img_album_midnight_tokyo,
+            accentColor = Color(0xFF00F5D4),
+            isExplicit = false,
+            trackNumber = 1,
+            baseFreqHz = 261.63f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Apna Bana Le",
+                "Arijit Singh, Sachin-Jigar",
+                "Bhediya",
+                261
+            ),
+            composer = "Sachin-Jigar",
+            producer = "Zee Music Company",
+            artworkUrl = "https://c.saavncdn.com/013/Hot-Hits-Bollywood-Hindi-2026-20260603175919-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/013/bf5607afdc99d0b6ac8fef1785b5bd7a_320.mp4"
+        ),
+        Song(
+            id = "sng_28",
+            title = "Arjan Vailly",
+            artist = "Bhupinder Babbal, Manan Bhardwaj",
+            albumTitle = "Animal",
+            durationSeconds = 182,
+            artworkRes = R.drawable.img_album_nocturne,
+            accentColor = Color(0xFFDC2626),
+            isExplicit = false,
+            trackNumber = 2,
+            baseFreqHz = 196.00f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Arjan Vailly",
+                "Bhupinder Babbal, Manan Bhardwaj",
+                "Animal",
+                182
+            ),
+            composer = "Manan Bhardwaj",
+            producer = "T-Series • Animal",
+            artworkUrl = "https://c.saavncdn.com/092/ANIMAL-Hindi-2023-20260724191152-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/092/52f3f74bcb4295cde59e44ac020d0126_320.mp4"
+        ),
+        Song(
+            id = "sng_29",
+            title = "Pehle Bhi Main",
+            artist = "Vishal Mishra, Raj Shekhar, Harshavardhan Rameshwar",
+            albumTitle = "Animal",
+            durationSeconds = 250,
+            artworkRes = R.drawable.img_album_nocturne,
+            accentColor = Color(0xFF8B5CF6),
+            isExplicit = false,
+            trackNumber = 3,
+            baseFreqHz = 246.94f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Pehle Bhi Main",
+                "Vishal Mishra, Harshavardhan Rameshwar",
+                "Animal",
+                250
+            ),
+            composer = "Harshavardhan Rameshwar",
+            producer = "T-Series • Animal",
+            artworkUrl = "https://c.saavncdn.com/092/ANIMAL-Hindi-2023-20260724191152-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/092/81b52beea90f186f27cf5c5eead972c8_320.mp4"
+        ),
+        Song(
+            id = "sng_30",
+            title = "Chaleya",
+            artist = "Arijit Singh, Shilpa Rao, Anirudh Ravichander, Kumaar",
+            albumTitle = "Jawan",
+            durationSeconds = 200,
+            artworkRes = R.drawable.img_album_astral_drift,
+            accentColor = Color(0xFFF72585),
+            isExplicit = false,
+            trackNumber = 1,
+            baseFreqHz = 349.23f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Chaleya",
+                "Arijit Singh, Shilpa Rao, Anirudh Ravichander",
+                "Jawan",
+                200
+            ),
+            composer = "Anirudh Ravichander",
+            producer = "T-Series • Jawan",
+            artworkUrl = "https://c.saavncdn.com/047/Jawan-Hindi-2023-20230921190854-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/047/d1366530468931703ac909e82a3ee788_320.mp4"
+        ),
+        Song(
+            id = "sng_31",
+            title = "Lover",
+            artist = "Diljit Dosanjh, Intense, Raj Ranjodh",
+            albumTitle = "MoonChild Era",
+            durationSeconds = 185,
+            artworkRes = R.drawable.img_album_glacial_static,
+            accentColor = Color(0xFF38BDF8),
+            isExplicit = false,
+            trackNumber = 1,
+            baseFreqHz = 311.13f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Lover",
+                "Diljit Dosanjh, Intense",
+                "MoonChild Era",
+                185
+            ),
+            composer = "Intense, Raj Ranjodh",
+            producer = "Famous Studios",
+            artworkUrl = "https://c.saavncdn.com/209/MoonChild-Era-Punjabi-2021-20240715073449-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/209/88cd9a1cc0af8768d67272876bb09851_320.mp4"
+        ),
+        Song(
+            id = "sng_32",
+            title = "Tum Hi Ho",
+            artist = "Arijit Singh, Mithoon",
+            albumTitle = "Aashiqui 2",
+            durationSeconds = 262,
+            artworkRes = R.drawable.img_album_velvet_echoes,
+            accentColor = Color(0xFF3B82F6),
+            isExplicit = false,
+            trackNumber = 1,
+            baseFreqHz = 220.00f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Tum Hi Ho",
+                "Arijit Singh, Mithoon",
+                "Aashiqui 2",
+                262
+            ),
+            composer = "Mithoon",
+            producer = "T-Series",
+            artworkUrl = "https://c.saavncdn.com/430/Aashiqui-2-Hindi-2013-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/430/5c5ea5cc00e3bff45616013226f376fe_320.mp4"
+        ),
+        Song(
+            id = "sng_33",
+            title = "Bekhayali",
+            artist = "Sachet Tandon, Sachet-Parampara, Irshad Kamil",
+            albumTitle = "Kabir Singh",
+            durationSeconds = 371,
+            artworkRes = R.drawable.img_album_obsidian_hearts,
+            accentColor = Color(0xFFFF5722),
+            isExplicit = false,
+            trackNumber = 1,
+            baseFreqHz = 277.18f,
+            synchronizedLyrics = OnyxSongApiService.generateSyncedLyricsForSong(
+                "Bekhayali",
+                "Sachet Tandon, Sachet-Parampara",
+                "Kabir Singh",
+                371
+            ),
+            composer = "Sachet-Parampara",
+            producer = "T-Series • Kabir Singh",
+            artworkUrl = "https://c.saavncdn.com/807/Kabir-Singh-Hindi-2019-20240131131003-500x500.jpg",
+            audioUrl = "https://aac.saavncdn.com/807/db5027c7f61ea05b4f9841bfc056e1c5_320.mp4"
         )
     )
 
@@ -769,12 +1032,12 @@ class MusicRepository {
         ArtistProfile(
             id = "art_kaelen",
             name = "Arijit Singh",
-            genre = "Bollywood • Dhurandhar & Sky Force",
+            genre = "Bollywood • Soulful & Romantic",
             monthlyListeners = "45.2M Listeners",
             avatarRes = R.drawable.img_album_velvet_echoes,
             accentColor = Color(0xFF168BFF),
             topAlbumId = "alb_neon_horizons",
-            avatarUrl = "https://c.saavncdn.com/695/Sky-Force-Hindi-2025-20250129103147-500x500.jpg"
+            avatarUrl = "https://c.saavncdn.com/artists/Arijit_Singh_002_20230323062147_500x500.jpg"
         ),
         ArtistProfile(
             id = "art_soraia",
@@ -784,7 +1047,7 @@ class MusicRepository {
             avatarRes = R.drawable.img_album_neon_horizons,
             accentColor = Color(0xFFFF2A5F),
             topAlbumId = "alb_neon_horizons",
-            avatarUrl = "https://c.saavncdn.com/475/Dhurandhar-Hindi-2025-20260203083204-500x500.jpg"
+            avatarUrl = "https://c.saavncdn.com/artists/Shashwat_Sachdev_000_20221011114409_500x500.jpg"
         ),
         ArtistProfile(
             id = "art_kenji",
@@ -794,7 +1057,7 @@ class MusicRepository {
             avatarRes = R.drawable.img_album_glacial_static,
             accentColor = Color(0xFF00F5D4),
             topAlbumId = "alb_glacial_static",
-            avatarUrl = "https://c.saavncdn.com/918/AUJLA-SZN-1-Punjabi-2026-20261026194125-500x500.jpg"
+            avatarUrl = "https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg"
         ),
         ArtistProfile(
             id = "art_aurelia",
@@ -804,7 +1067,7 @@ class MusicRepository {
             avatarRes = R.drawable.img_album_solar_flare,
             accentColor = Color(0xFFFF9E00),
             topAlbumId = "alb_solar_flare",
-            avatarUrl = "https://c.saavncdn.com/173/GLORY-Hindi-2024-20250117161048-500x500.jpg"
+            avatarUrl = "https://c.saavncdn.com/artists/Yo_Yo_Honey_Singh_004_20260811095253_500x500.jpg"
         ),
         ArtistProfile(
             id = "art_zara",
@@ -814,7 +1077,7 @@ class MusicRepository {
             avatarRes = R.drawable.img_album_astral_drift,
             accentColor = Color(0xFFEC4899),
             topAlbumId = "alb_crimson_tide",
-            avatarUrl = "https://c.saavncdn.com/443/Bhool-Bhulaiyaa-3-Hindi-2024-20250430161035-500x500.jpg"
+            avatarUrl = "https://c.saavncdn.com/artists/Diljit_Dosanjh_005_20231025073054_500x500.jpg"
         ),
         ArtistProfile(
             id = "art_julian",
@@ -824,7 +1087,7 @@ class MusicRepository {
             avatarRes = R.drawable.img_album_midnight_tokyo,
             accentColor = Color(0xFFEAB308),
             topAlbumId = "alb_midnight_tokyo",
-            avatarUrl = "https://c.saavncdn.com/373/Stree-2-Hindi-2024-20240828083834-500x500.jpg"
+            avatarUrl = "https://c.saavncdn.com/artists/Sachin_Jigar_003_20251222093820_500x500.jpg"
         )
     )
 

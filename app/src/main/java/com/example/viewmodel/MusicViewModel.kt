@@ -69,6 +69,8 @@ data class MusicUiState(
     val continueListening: List<Album> = emptyList(),
     val popularSongs: List<Song> = emptyList(),
     val featuredPlaylists: List<Playlist> = emptyList(),
+    val decadeBlockbusters: List<Song> = emptyList(),
+    val decadeAlbums: List<Album> = emptyList(),
 
     // Full Catalog
     val allAlbums: List<Album> = emptyList(),
@@ -117,8 +119,8 @@ data class MusicUiState(
     val repeatMode: RepeatMode = RepeatMode.ALL,
     val isMuted: Boolean = false,
     val sleepTimerMinutes: Int? = null,
-    val likedSongIds: Set<String> = setOf("sng_1", "sng_2", "sng_4", "sng_8"),
-    val savedSongIds: Set<String> = setOf("sng_1", "sng_2", "sng_3", "sng_4", "sng_5", "sng_8"),
+    val likedSongIds: Set<String> = emptySet(),
+    val savedSongIds: Set<String> = emptySet(),
     val savedPlaylistIds: Set<String> = setOf("pl_midnight_drive", "pl_velvet_lounge", "pl_deep_focus"),
     val savedAlbumIds: Set<String> = setOf("alb_neon_horizons", "alb_velvet_echoes", "alb_solar_flare"),
     val selectedAudioOutput: String = "This Android Phone",
@@ -235,6 +237,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             continueListening = catalogUseCase.getContinueListening(),
             popularSongs = catalogUseCase.getTopSongs(),
             featuredPlaylists = catalogUseCase.getPopularPlaylists(),
+            decadeBlockbusters = catalogUseCase.getDecadeBlockbusters(),
+            decadeAlbums = catalogUseCase.getDecadeAlbums(),
             allAlbums = initialAlbums,
             allSongs = initialSongs,
             allPlaylists = initialPlaylists,
@@ -555,7 +559,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update {
             it.copy(
                 isGeneratingAiLyrics = true,
-                toastMessage = "Gemini AI is verifying time-synced lyrics for '${targetSong.title}'..."
+                toastMessage = "Fetching synchronized lyrics for '${targetSong.title}'..."
             )
         }
         scheduleToastClear()
@@ -580,7 +584,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
                     allSongs = updatedAll,
                     aiLyricsMeaningMap = state.aiLyricsMeaningMap + (targetSong.id to aiResult.meaningSummary),
                     aiLyricsMoodTagMap = state.aiLyricsMoodTagMap + (targetSong.id to aiResult.moodTag),
-                    toastMessage = "✨ Gemini AI verified ${aiResult.lines.size} synced lines & translation"
+                    toastMessage = "Synchronized ${aiResult.lines.size} lyrics lines & translation"
                 )
             }
             scheduleToastClear()
@@ -786,15 +790,15 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         // Automatically adapt mood feed if voice command mentions a mood
         when {
             lower.contains("sad") || lower.contains("heartbreak") || lower.contains("dard") ->
-                selectMood("😢 Sad & Heartbreak", autoPlayMix = true)
+                selectMood("Sad & Heartbreak", autoPlayMix = true)
             lower.contains("punjabi") || lower.contains("drive") ->
-                selectMood("🚗 Long Drive Punjabi", autoPlayMix = true)
+                selectMood("Long Drive Punjabi", autoPlayMix = true)
             lower.contains("party") || lower.contains("dance") || lower.contains("diwali") ->
-                selectMood("🕺 Desi Party", autoPlayMix = true)
+                selectMood("Desi Party", autoPlayMix = true)
             lower.contains("workout") || lower.contains("gym") ->
-                selectMood("⚡ Workout & Gym", autoPlayMix = true)
+                selectMood("Workout & Gym", autoPlayMix = true)
             lower.contains("romantic") || lower.contains("love") ->
-                selectMood("❤️ Late Night Romance", autoPlayMix = true)
+                selectMood("Late Night Romance", autoPlayMix = true)
         }
 
         updateSearchQuery(lower)
@@ -803,9 +807,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val apiSongs = OnyxSongApiService.searchSongs(lower, resolveArtwork = true, page = 1, pageSize = 30)
             if (apiSongs.isNotEmpty()) {
                 playSong(apiSongs.first(), apiSongs)
-                showToast("🎙️ Voice AI Playing: ${apiSongs.first().title}")
+                showToast("Playing: ${apiSongs.first().title}")
             } else {
-                showToast("🎙️ Voice AI Search: $lower")
+                showToast("Searching: $lower")
             }
         }
     }

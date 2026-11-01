@@ -205,6 +205,9 @@ fun AuraMusicApp(
                             popularPlaylists = uiState.popularPlaylists,
                             favouriteSongs = favouriteSongs,
                             continueListening = uiState.continueListening,
+                            decadeBlockbusters = uiState.decadeBlockbusters,
+                            decadeAlbums = uiState.decadeAlbums,
+                            downloadedTracks = uiState.downloadedTracks,
                             currentPlayingSongId = uiState.currentSong.id,
                             isPlaying = uiState.isPlaying,
                             likedSongIds = uiState.likedSongIds,
@@ -226,17 +229,15 @@ fun AuraMusicApp(
                             onSeeAllClick = { sectionKey ->
                                 navController.navigate("section_all/$sectionKey") { launchSingleTop = true }
                             },
-                            availableMoods = uiState.availableMoods,
-                            selectedMood = uiState.selectedMood,
-                            aiMoodCuratorNote = uiState.aiMoodCuratorNote,
-                            aiMoodTargetBpm = "${uiState.aiMoodTargetBpm} BPM",
-                            aiSuggestedSongs = uiState.aiSuggestedSongs,
-                            isGeneratingMoodMix = uiState.isGeneratingMoodMix,
-                            onSelectMood = musicViewModel::selectMood,
-                            onPlayAiMoodMix = musicViewModel::playAiMoodMix,
                             isOfflineMode = uiState.isOfflineMode,
                             offlineOnlyFilterEnabled = uiState.offlineOnlyFilterEnabled,
-                            onToggleOfflineFilter = musicViewModel::toggleOfflineOnlyFilter
+                            onToggleOfflineFilter = musicViewModel::toggleOfflineOnlyFilter,
+                            onGoToDownloads = {
+                                musicViewModel.selectTab(AppTab.LIBRARY)
+                                navController.navigate(AppTab.LIBRARY.route) {
+                                    launchSingleTop = true
+                                }
+                            }
                         )
                     }
                 }

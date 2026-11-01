@@ -3,17 +3,14 @@
 ### 📱 Live Streaming Emulator Screenshots (Real Android Captures)
 
 <p align="center">
-  <img src="screenshots/01_home_screen.png" width="24%" alt="01 Home Screen - Top Picks & Recently Played" />
-  <img src="screenshots/02_new_releases.png" width="24%" alt="02 New Tab - Early Access & Best New Songs" />
-  <img src="screenshots/03_live_radio.png" width="24%" alt="03 Radio Tab - On Air Now & Global Stations" />
-  <img src="screenshots/04_library_folders.png" width="24%" alt="04 Library Tab - Playlists, Folders & Downloads" />
+  <img src="screenshots/01_home_screen.png" width="30%" alt="01 Home Screen - Top Picks & Recently Played" />
+  <img src="screenshots/02_new_releases.png" width="30%" alt="02 New Tab - Early Access & Best New Songs" />
+  <img src="screenshots/03_live_radio.png" width="30%" alt="03 Radio Tab - On Air Now & Global Stations" />
 </p>
 
 <p align="center">
-  <img src="screenshots/05_player_playback.png" width="24%" alt="05 Now Playing Screen - 320kbps Dolby Atmos Audio" />
-  <img src="screenshots/03_synced_lyrics_dhurandhar.png" width="24%" alt="06 Time-Synced Bilingual Lyrics" />
-  <img src="screenshots/04_player_seekbar_spatial.png" width="24%" alt="07 Spatial Audio & Hardware Controls" />
-  <img src="screenshots/02_now_playing_goat.png" width="24%" alt="08 G.O.A.T. Lossless Playback" />
+  <img src="screenshots/04_library_folders.png" width="45%" alt="04 Library Tab - Playlists, Folders & Downloads" />
+  <img src="screenshots/05_player_playback.png" width="45%" alt="05 Now Playing Screen - 320kbps Dolby Atmos Audio" />
 </p>
 
 ---
@@ -41,20 +38,13 @@
 - **Hardware Volume Guard & Polyphonic Fallback Synthesizer**: Automatically ensures `AudioManager.STREAM_MUSIC` is audible and provides a full-volume 44.1kHz stereo PCM polyphonic synthesizer fallback when offline.
 - **5-Band Studio Equalizer, Bass Boost & 3D Virtualizer**: Real hardware DSP bound directly to the active `MediaPlayer.audioSessionId`.
 
-### 2. 🤖 Gemini AI (`gemini-3.8-flash`) Time-Synced Lyrics & Bilingual Translation (`GeminiMusicAiService`)
-- **Authentic Hindi, Punjabi & English Lyrics**: Replaces generic filler lines with real hook/verse lyrics and English translations for **Dhurandhar (Title Track, Ishq Jalakar Karwan, Gehra Hua)**, **Kesariya**, **G.O.A.T.**, **Aaj Ki Raat**, **Tauba Tauba**, **Apna Bana Le**, **Pehle Bhi Main**, **Arjan Vailly**, **Sajni**, **Softly**, **Millionaire**, plus live LRCLIB & JioSaavn lyrics fetching.
-- **On-Demand Gemini 3.8 Flash Verification**: Tap **"✨ AI Verify & Translate Lyrics (Gemini)"** on the Lyrics screen to generate structured time-synced lyrics, song meaning summaries, and bilingual translations using **Firebase AI Logic (`gemini-3.8-flash`)**.
+### 2. 🌟 10 Years of Bollywood & Punjabi Superhits (2015–2025) & Rich Album System
+- **Decade Blockbuster Showcase**: Prominent Home screen section featuring defining songs across 2015–2025: **Channa Mereya** (*Ae Dil Hai Mushkil*), **Tum Hi Ho** (*Aashiqui 2*), **Raataan Lambiyan** (*Shershaah*), **Bekhayali** (*Kabir Singh*), **Apna Bana Le** (*Bhediya*), **Arjan Vailly** & **Pehle Bhi Main** (*Animal*), **Chaleya** (*Jawan*), **Lover** & **G.O.A.T.** (*Diljit Dosanjh*), **Kesariya** (*Brahmastra*), **Tauba Tauba** (*Bad Newz*), **Millionaire** (*GLORY*), **Aaj Ki Raat** (*Stree 2*), and **Saiyaara**.
+- **Expanded Albums Catalog**: Complete lossless albums including *Ae Dil Hai Mushkil* (2016), *Kabir Singh* (2019), *Shershaah* (2021), *MoonChild Era* (2021), *Animal* (2023), *Stree 2* (2024), *GLORY* (2024), *AUJLA SZN 1* (2026), and *Saiyaara* (2025).
 
-### 3. 🎭 Interactive Moods & AI Smart Suggestions
-- **7 Instant Mood Modes**:
-  - `🔥 Mass & Action` (*Dhurandhar, Arjan Vailly, G.O.A.T.*)
-  - `❤️ Late Night Romance` (*Kesariya, Apna Bana Le, Pehle Bhi Main, Sajni*)
-  - `⚡ Workout & Gym` (*135+ BPM Power Anthems*)
-  - `🚗 Long Drive Punjabi` (*Diljit Dosanjh, Karan Aujla, AP Dhillon*)
-  - `🕺 Desi Party` (*Aaj Ki Raat, Tauba Tauba, Millionaire*)
-  - `🌧️ Soulful Lo-Fi` (*Husn, O Maahi, Midnight Acoustic*)
-  - `🧘 Deep Focus` (*Spatial Instrumentals & Atmospheric Synths*)
-- **Gemini AI DJ Curator**: Dynamically recommends tracks, BPM targets, and live API search queries for each selected mood.
+### 3. 🎙️ YouTube-Style Clean Voice Search & Smart Sync
+- **Intuitive YouTube/Google-Inspired Voice Dialog**: Clean pulsating circular red microphone with "Listening... Speak now" prompt and instant query suggestion chips (*Arijit Singh Hits*, *Saiyaara*, *Karan Aujla*, *Aaj Ki Raat*, *Diljit Dosanjh*, *Stree 2*).
+- **Zero AI Clutter**: Pure, distraction-free music streaming interface without intrusive AI badges or assistant text on screen.
 
 ### 4. ☁️ Firebase Cloud Ecosystem (`Firestore` + `Google Sign-In` + `App Check` + `AI Logic`)
 - **Google Sign-In via Jetpack Credential Manager**: Uses `GetGoogleIdOption` and `GetSignInWithGoogleOption` with Firebase Auth (`GoogleAuthProvider`).
@@ -72,11 +62,11 @@
 
 ---
 
-## 📸 App Screenshots
+## 📸 Live Application Screenshots
 
-| Now Playing (Kesariya) | Now Playing (G.O.A.T.) | Synced Lyrics (Dhurandhar) | Spatial Player View |
-| :---: | :---: | :---: | :---: |
-| ![Kesariya](screenshots/01_now_playing_kesariya.png) | ![GOAT](screenshots/02_now_playing_goat.png) | ![Lyrics](screenshots/03_synced_lyrics_dhurandhar.png) | ![Player](screenshots/04_player_seekbar_spatial.png) |
+| Home (Top Picks & Hits) | New (Early Access & Tracks) | Live Radio | Library & Folders | Now Playing Player |
+| :---: | :---: | :---: | :---: | :---: |
+| ![Home](screenshots/01_home_screen.png) | ![New](screenshots/02_new_releases.png) | ![Radio](screenshots/03_live_radio.png) | ![Library](screenshots/04_library_folders.png) | ![Player](screenshots/05_player_playback.png) |
 
 ---
 

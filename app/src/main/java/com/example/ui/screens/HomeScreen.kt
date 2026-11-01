@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import com.example.data.download.DownloadedTrackRecord
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,6 +89,9 @@ fun HomeScreen(
     popularPlaylists: List<Playlist>,
     favouriteSongs: List<Song>,
     continueListening: List<Album>,
+    decadeBlockbusters: List<Song> = emptyList(),
+    decadeAlbums: List<Album> = emptyList(),
+    downloadedTracks: List<DownloadedTrackRecord> = emptyList(),
     currentPlayingSongId: String,
     isPlaying: Boolean,
     likedSongIds: Set<String>,
@@ -100,17 +105,10 @@ fun HomeScreen(
     onToggleFavorite: (String) -> Unit,
     onMoreOptionsClick: (Song) -> Unit,
     onSeeAllClick: (String) -> Unit,
-    availableMoods: List<String> = emptyList(),
-    selectedMood: String = "Mass & Action",
-    aiMoodCuratorNote: String = "",
-    aiMoodTargetBpm: String = "124 BPM",
-    aiSuggestedSongs: List<Song> = emptyList(),
-    isGeneratingMoodMix: Boolean = false,
-    onSelectMood: (String) -> Unit = {},
-    onPlayAiMoodMix: () -> Unit = {},
     isOfflineMode: Boolean = false,
     offlineOnlyFilterEnabled: Boolean = false,
     onToggleOfflineFilter: () -> Unit = {},
+    onGoToDownloads: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val auraColors = LocalAuraColors.current
@@ -122,6 +120,86 @@ fun HomeScreen(
             .testTag("home_screen_list"),
         contentPadding = PaddingValues(top = 104.dp, bottom = 188.dp)
     ) {
+        // 0. Offline Mode Indicator & Direct Downloads Access
+        if (isOfflineMode || offlineOnlyFilterEnabled) {
+            item(key = "home_offline_indicator_card") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color(0xFF1E293B),
+                                    Color(0xFF0F172A)
+                                )
+                            )
+                        )
+                        .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.45f), RoundedCornerShape(16.dp))
+                        .padding(14.dp)
+                        .testTag("home_offline_indicator")
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF38BDF8).copy(alpha = 0.18f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.CloudOff,
+                                contentDescription = "Offline Mode",
+                                tint = Color(0xFF38BDF8),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Offline Mode Active",
+                                color = TextPrimaryWhite,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = InterFontFamily
+                            )
+                            Text(
+                                text = if (downloadedTracks.isNotEmpty()) {
+                                    "${downloadedTracks.size} songs ready in Downloads"
+                                } else {
+                                    "Playing cached songs & offline audio"
+                                },
+                                color = auraColors.textSecondary,
+                                fontSize = 12.sp,
+                                fontFamily = InterFontFamily
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color(0xFF38BDF8))
+                                .clickable { onGoToDownloads() }
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                                .testTag("home_offline_downloads_btn")
+                        ) {
+                            Text(
+                                text = "Downloads",
+                                color = Color.Black,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = InterFontFamily
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+        }
+
         // 1. Top Picks for You (Large Editorial Hero Carousel)
         item(key = "home_top_picks") {
             MusicSectionHeader(
@@ -171,6 +249,49 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(OnyxDesignTokens.SectionVerticalSpacing))
         }
 
+        // 2b. 10 Years of Bollywood & Punjabi Blockbusters (2015–2025)
+        item(key = "home_decade_hits_header") {
+            MusicSectionHeader(
+                title = "10 Years of Blockbusters (2015–2025)",
+                subtitle = "Iconic decade chartbusters & defining albums",
+                onSeeAllClick = { onSeeAllClick("decade_hits") }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = OnyxDesignTokens.ScreenHorizontalPadding),
+                horizontalArrangement = Arrangement.spacedBy(OnyxDesignTokens.CardHorizontalGap),
+                modifier = Modifier.testTag("row_decade_albums")
+            ) {
+                items(decadeAlbums, key = { "decade_alb_${it.id}" }) { album ->
+                    AlbumArtworkCard(
+                        album = album,
+                        onCardClick = { onAlbumClick(album) },
+                        onPlayClick = { onPlayAlbum(album) },
+                        cardWidth = OnyxDesignTokens.StandardSquareCardWidth
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
+        items(
+            items = decadeBlockbusters.take(8),
+            key = { "decade_song_${it.id}" }
+        ) { song ->
+            MusicListItem(
+                song = song,
+                isCurrentlyPlaying = isPlaying && song.id == currentPlayingSongId,
+                isLiked = likedSongIds.contains(song.id),
+                onSongClick = { onSongClick(song) },
+                onFavoriteClick = { onToggleFavorite(song.id) },
+                onMoreOptionsClick = { onMoreOptionsClick(song) }
+            )
+        }
+
+        item(key = "home_decade_spacer") {
+            Spacer(modifier = Modifier.height(OnyxDesignTokens.SectionVerticalSpacing))
+        }
+
         // 3. Made For You
         item(key = "home_made_for_you") {
             MusicSectionHeader(
@@ -196,262 +317,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(OnyxDesignTokens.SectionVerticalSpacing))
         }
 
-        // 3b. Moods & Gemini AI Smart Suggestions + Offline Mode Control
-        if (availableMoods.isNotEmpty()) {
-            item(key = "home_ai_moods") {
-                if (isOfflineMode || offlineOnlyFilterEnabled) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = OnyxDesignTokens.ScreenHorizontalPadding)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF1E3A8A).copy(alpha = 0.42f))
-                            .border(0.8.dp, ElectricBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
-                            .clickable { onToggleOfflineFilter() }
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
-                            .testTag("home_offline_mode_banner"),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Icon(
-                                imageVector = Icons.Filled.CloudOff,
-                                contentDescription = "Offline Mode",
-                                tint = ElectricBlue,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Offline Listening Mode Active",
-                                    color = TextPrimaryWhite,
-                                    fontFamily = InterFontFamily,
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = "Playing downloaded 320kbps AAC & synthesized spatial tracks without network",
-                                    color = auraColors.textSecondary,
-                                    fontFamily = InterFontFamily,
-                                    fontSize = 11.5.sp
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Switch",
-                            color = ElectricBlue,
-                            fontFamily = InterFontFamily,
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
 
-                MusicSectionHeader(
-                    title = "Auto-Adaptive AI Moods & Feed",
-                    subtitle = "Automatically adapts your feed when playing Sad, Romantic, Punjabi, or Mass tracks"
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = OnyxDesignTokens.ScreenHorizontalPadding),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.testTag("row_ai_mood_chips")
-                ) {
-                    items(availableMoods, key = { "mood_$it" }) { mood ->
-                        val isSelected = mood == selectedMood
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(
-                                    if (isSelected) ElectricBlue
-                                    else auraColors.cardSurface
-                                )
-                                .border(
-                                    0.8.dp,
-                                    if (isSelected) ElectricBlue else auraColors.glassBorder,
-                                    RoundedCornerShape(50)
-                                )
-                                .clickable { onSelectMood(mood) }
-                                .padding(horizontal = 16.dp, vertical = 9.dp)
-                                .testTag("mood_chip_${mood.lowercase().replace(" ", "_")}")
-                        ) {
-                            Text(
-                                text = mood,
-                                color = if (isSelected) Color.White else auraColors.textPrimary,
-                                fontFamily = InterFontFamily,
-                                fontSize = 13.5.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Gemini AI Auto-Adaptive Mood Curator Card (Matching Box Card Aesthetic)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = OnyxDesignTokens.ScreenHorizontalPadding)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(auraColors.cardSurface)
-                        .border(0.8.dp, ElectricBlue.copy(alpha = 0.45f), RoundedCornerShape(18.dp))
-                        .padding(16.dp)
-                        .testTag("ai_mood_curator_card")
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Icon(
-                                    imageVector = Icons.Filled.AutoAwesome,
-                                    contentDescription = "Gemini AI",
-                                    tint = ElectricBlue,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "AUTO-ADAPTIVE AI • $selectedMood • $aiMoodTargetBpm",
-                                    color = ElectricBlue,
-                                    fontFamily = InterFontFamily,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.6.sp
-                                )
-                            }
-
-                            if (isGeneratingMoodMix) {
-                                CircularProgressIndicator(
-                                    color = ElectricBlue,
-                                    strokeWidth = 2.dp,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            } else {
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(50))
-                                        .background(ElectricBlue)
-                                        .clickable { onPlayAiMoodMix() }
-                                        .padding(horizontal = 14.dp, vertical = 7.dp)
-                                        .testTag("play_ai_mood_mix_button"),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.PlayArrow,
-                                        contentDescription = "Play AI Mix",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Play Mix",
-                                        color = Color.White,
-                                        fontFamily = InterFontFamily,
-                                        fontSize = 12.5.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-
-                        if (aiMoodCuratorNote.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = aiMoodCuratorNote,
-                                color = TextPrimaryWhite.copy(alpha = 0.90f),
-                                fontFamily = InterFontFamily,
-                                fontSize = 13.5.sp,
-                                lineHeight = 19.sp
-                            )
-                        }
-
-                        if (aiSuggestedSongs.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.testTag("row_ai_suggested_songs")
-                            ) {
-                                items(aiSuggestedSongs.take(8), key = { "aisug_${it.id}" }) { song ->
-                                    Row(
-                                        modifier = Modifier
-                                            .width(220.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(Color.Black.copy(alpha = 0.35f))
-                                            .border(0.6.dp, auraColors.glassBorder, RoundedCornerShape(12.dp))
-                                            .clickable { onSongClick(song) }
-                                            .padding(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        AsyncImage(
-                                            model = song.artworkModel,
-                                            placeholder = painterResource(song.artworkRes),
-                                            error = painterResource(song.artworkRes),
-                                            contentDescription = song.title,
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .size(44.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                        )
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = song.title,
-                                                color = TextPrimaryWhite,
-                                                fontFamily = InterFontFamily,
-                                                fontSize = 13.5.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                            Text(
-                                                text = song.artist,
-                                                color = auraColors.textSecondary,
-                                                fontFamily = InterFontFamily,
-                                                fontSize = 11.5.sp,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.Black.copy(alpha = 0.28f))
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "⚡ Eco-Battery BG (<1.5%/hr) • Cache <180MB / 500MB Max",
-                                color = auraColors.textSecondary,
-                                fontFamily = InterFontFamily,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "A–Z Live API Ready",
-                                color = ElectricBlue,
-                                fontFamily = InterFontFamily,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(OnyxDesignTokens.SectionVerticalSpacing))
-            }
-        }
 
         // 4. Recommended Albums (Strict 1:1 Square Artwork Carousel)
         item(key = "home_recommended_albums") {

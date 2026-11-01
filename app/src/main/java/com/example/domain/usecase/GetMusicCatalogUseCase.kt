@@ -12,10 +12,32 @@ class GetMusicCatalogUseCase(
 ) {
     // New Screen Sections
     fun getEarlyAccessAlbums(): List<Album> =
-        listOf(repository.albums[0], repository.albums[1], repository.albums[11], repository.albums[2])
+        listOf(
+            repository.albums[1], // Saiyaara
+            repository.albums[2], // Stree 2
+            repository.albums[9], // AUJLA SZN 1 (Karan Aujla)
+            repository.albums[3], // GLORY (Honey Singh)
+            repository.albums[10], // Pushpa 2
+            repository.albums[4], // Bhool Bhulaiyaa 3
+            repository.albums[0]  // Dhurandhar
+        )
 
     fun getBestNewSongs(): List<Song> =
-        repository.songs.take(12)
+        listOf(
+            repository.songs[3], // Saiyaara
+            repository.songs[4], // Aaj Ki Raat (Stree 2)
+            repository.songs[5], // Tauba Tauba (Karan Aujla)
+            repository.songs[6], // Millionaire (Honey Singh)
+            repository.songs[7], // Raanjhan (Do Patti)
+            repository.songs[8], // Bhool Bhulaiyaa 3 (Diljit Dosanjh)
+            repository.songs[16], // Sajni (Arijit Singh)
+            repository.songs[17], // Peelings (Pushpa 2)
+            repository.songs[14], // Ashke (Karan Aujla)
+            repository.songs[21], // Kesariya (Arijit Singh)
+            repository.songs[23], // G.O.A.T. (Diljit Dosanjh)
+            repository.songs[0],  // Dhurandhar Title Track
+            repository.songs[1]   // Gehra Hua
+        )
 
     fun getNewThisWeekAlbums(): List<Album> =
         listOf(repository.albums[3], repository.albums[4], repository.albums[5], repository.albums[6], repository.albums[7])
@@ -28,28 +50,43 @@ class GetMusicCatalogUseCase(
 
     // Home Screen Sections
     fun getTopPicksForYou(): List<Album> =
-        listOf(repository.albums[0], repository.albums[6], repository.albums[1], repository.albums[2], repository.albums[9], repository.albums[4])
+        listOf(
+            repository.albums[1], // Saiyaara
+            repository.albums[2], // Stree 2
+            repository.albums[9], // AUJLA SZN 1 (Karan Aujla)
+            repository.albums[3], // GLORY (Honey Singh)
+            repository.albums[10], // Pushpa 2 The Rule
+            repository.albums[4], // Bhool Bhulaiyaa 3 (Diljit Dosanjh & Pitbull)
+            repository.albums[0]  // Dhurandhar
+        )
 
     fun getRecentlyPlayed(): List<Album> =
-        listOf(repository.albums[0], repository.albums[2], repository.albums[1], repository.albums[6], repository.albums[9], repository.albums[10])
+        listOf(
+            repository.albums[2], // Stree 2
+            repository.albums[1], // Saiyaara
+            repository.albums[9], // AUJLA SZN 1
+            repository.albums[10], // Pushpa 2
+            repository.albums[4], // Bhool Bhulaiyaa 3
+            repository.albums[0]  // Dhurandhar
+        )
 
     fun getMadeForYou(): List<Playlist> =
-        listOf(repository.playlists[0], repository.playlists[1], repository.playlists[2], repository.playlists[3], repository.playlists[4])
+        listOf(repository.playlists[1], repository.playlists[2], repository.playlists[3], repository.playlists[4], repository.playlists[0])
 
     fun getTopSongs(): List<Song> =
         listOf(
-            repository.songs[0],
-            repository.songs[1],
-            repository.songs[2],
-            repository.songs[3],
-            repository.songs[4],
-            repository.songs[5],
-            repository.songs[6],
-            repository.songs[7],
-            repository.songs[8],
-            repository.songs[11],
-            repository.songs[14],
-            repository.songs[16]
+            repository.songs[3], // Saiyaara
+            repository.songs[4], // Aaj Ki Raat (Stree 2)
+            repository.songs[5], // Tauba Tauba (Karan Aujla)
+            repository.songs[6], // Millionaire (Honey Singh)
+            repository.songs[7], // Raanjhan (Do Patti)
+            repository.songs[8], // Bhool Bhulaiyaa 3 (Diljit Dosanjh)
+            repository.songs[16], // Sajni (Arijit Singh)
+            repository.songs[17], // Peelings (Pushpa 2)
+            repository.songs[14], // Ashke (Karan Aujla)
+            repository.songs[21], // Kesariya (Arijit Singh)
+            repository.songs[23], // G.O.A.T. (Diljit Dosanjh)
+            repository.songs[0]  // Dhurandhar Title Track
         )
 
     fun getNewReleases(): List<Album> =
@@ -66,6 +103,37 @@ class GetMusicCatalogUseCase(
 
     fun getPopularPlaylists(): List<Playlist> =
         repository.playlists.reversed()
+
+    fun getDecadeBlockbusters(): List<Song> =
+        listOf(
+            repository.songs[24], // Channa Mereya (2016)
+            repository.songs[31], // Tum Hi Ho (2013)
+            repository.songs[25], // Raataan Lambiyan (2021)
+            repository.songs[32], // Bekhayali (2019)
+            repository.songs[26], // Apna Bana Le (2022)
+            repository.songs[27], // Arjan Vailly (2023)
+            repository.songs[28], // Pehle Bhi Main (2023)
+            repository.songs[29], // Chaleya (2023)
+            repository.songs[30], // Lover (2021)
+            repository.songs[21], // Kesariya (2022)
+            repository.songs[23], // G.O.A.T. (2020)
+            repository.songs[5],  // Tauba Tauba (2024)
+            repository.songs[6],  // Millionaire (2024)
+            repository.songs[4],  // Aaj Ki Raat (2024)
+            repository.songs[3]   // Saiyaara (2025)
+        )
+
+    fun getDecadeAlbums(): List<Album> =
+        listOf(
+            repository.albums[12], // Ae Dil Hai Mushkil (2016)
+            repository.albums[13], // Kabir Singh (2019)
+            repository.albums[14], // Shershaah (2021)
+            repository.albums[15], // Animal (2023)
+            repository.albums[16], // MoonChild Era (2021)
+            repository.albums[2],  // Stree 2 (2024)
+            repository.albums[1],  // Saiyaara (2025)
+            repository.albums[3]   // GLORY (2024)
+        )
 
     fun getContinueListening(): List<Album> =
         listOf(repository.albums[8], repository.albums[5], repository.albums[10], repository.albums[2])

@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -356,8 +357,8 @@ fun SearchScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Mic,
-                                contentDescription = "Voice AI search",
-                                tint = if (isVoiceAssistantOpen) ElectricBlue else auraColors.textSecondary,
+                                contentDescription = "Voice search",
+                                tint = if (isVoiceAssistantOpen) Color(0xFFEF4444) else auraColors.textSecondary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -371,54 +372,138 @@ fun SearchScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(auraColors.cardSurface)
-                        .border(0.8.dp, ElectricBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
-                        .padding(14.dp)
-                        .testTag("voice_ai_assistant_panel")
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(0xFF1E293B),
+                                    Color(0xFF0F172A)
+                                )
+                            )
+                        )
+                        .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.35f), RoundedCornerShape(18.dp))
+                        .padding(18.dp)
+                        .testTag("youtube_style_voice_search_panel"),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Voice Search",
+                            color = TextPrimaryWhite,
+                            fontFamily = InterFontFamily,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = { isVoiceAssistantOpen = false },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Close",
+                                tint = auraColors.textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Glowing YouTube-style Red Microphone Button
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    listOf(
+                                        Color(0xFFEF4444).copy(alpha = 0.35f),
+                                        Color(0xFFEF4444).copy(alpha = 0.08f)
+                                    )
+                                )
+                            )
+                            .border(1.5.dp, Color(0xFFEF4444).copy(alpha = 0.65f), CircleShape)
+                            .clickable {
+                                runCatching {
+                                    val speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                        putExtra(
+                                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                                        )
+                                        putExtra(RecognizerIntent.EXTRA_PROMPT, "Listening...")
+                                    }
+                                    speechLauncher.launch(speechIntent)
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Mic,
+                                contentDescription = "Tap to speak",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "GEMINI VOICE AI ASSISTANT • SPEAK OR SELECT A VOICE COMMAND",
-                        color = ElectricBlue,
+                        text = "Listening... Speak now",
+                        color = TextPrimaryWhite,
                         fontFamily = InterFontFamily,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.6.sp
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Say any song, artist, or mood — AI will stream the track and auto-adapt your feed:",
+                        text = "Try saying a song name, artist, or album",
                         color = auraColors.textSecondary,
                         fontFamily = InterFontFamily,
                         fontSize = 12.sp
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         val sampleCommands = listOf(
-                            "Play Sad Arijit Singh Songs",
-                            "Play Dhurandhar Title Track",
-                            "Happy Diwali Bollywood Party",
-                            "Punjabi Highway Bass Karan Aujla",
-                            "Telugu Mass Pushpa 2 Songs"
+                            "Arijit Singh Hits",
+                            "Saiyaara",
+                            "Karan Aujla",
+                            "Aaj Ki Raat",
+                            "Diljit Dosanjh",
+                            "Stree 2"
                         )
                         items(sampleCommands, key = { it }) { cmd ->
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(ElectricBlue.copy(alpha = 0.16f))
-                                    .border(0.6.dp, ElectricBlue.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color(0xFF334155).copy(alpha = 0.7f))
+                                    .border(0.6.dp, Color(0xFF64748B).copy(alpha = 0.4f), RoundedCornerShape(20.dp))
                                     .clickable {
                                         isVoiceAssistantOpen = false
                                         onVoiceCommand(cmd)
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    .padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
                                 Text(
-                                    text = "\"$cmd\"",
+                                    text = cmd,
                                     color = TextPrimaryWhite,
                                     fontFamily = InterFontFamily,
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }

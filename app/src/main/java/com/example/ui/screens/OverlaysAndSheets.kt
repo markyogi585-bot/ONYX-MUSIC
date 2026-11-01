@@ -1018,7 +1018,7 @@ fun LyricsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (isGeneratingAiLyrics) "Gemini AI Verifying Lyrics..." else "✨ Gemini AI Verify & Translate",
+                            text = if (isGeneratingAiLyrics) "Syncing Lyrics & Translation..." else "Synchronize & Translate Lyrics",
                             color = Color.White,
                             fontFamily = InterFontFamily,
                             fontSize = 12.5.sp,
@@ -1187,7 +1187,7 @@ fun LyricsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Time-synced lyrics are not available for \"${song.title}\" by ${song.artist}. Tap 'Gemini AI Verify & Translate' above to generate time-synced lyrics.",
+                                    text = "Time-synced lyrics are not available for \"${song.title}\" by ${song.artist}. Tap 'Synchronize & Translate Lyrics' above to load lyrics.",
                                     color = TextSecondaryGrey,
                                     fontFamily = InterFontFamily,
                                     fontSize = 14.sp,
@@ -1577,11 +1577,12 @@ fun SectionSeeAllScreen(
         "new_this_week" -> "New This Week"
         "recent_releases" -> "Recent Releases"
         "updated_playlists" -> "Updated Playlists"
+        "decade_hits" -> "10 Years of Blockbusters (2015–2025)"
         else -> "Browse Collection"
     }
 
     val isPlaylistSection = sectionKey in setOf("made_for_you", "popular_playlists", "updated_playlists", "artist_essentials")
-    val isSongSection = sectionKey in setOf("top_songs", "favourite_music", "best_new_songs")
+    val isSongSection = sectionKey in setOf("top_songs", "favourite_music", "best_new_songs", "decade_hits")
 
     OnyxDynamicBackground(
         screenType = ScreenBackgroundType.HOME,
