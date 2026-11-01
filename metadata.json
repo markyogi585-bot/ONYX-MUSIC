@@ -1,0 +1,6 @@
+{
+  "name": "Onyx Music",
+  "description": "A premium Android music streaming and local playback application with dynamic artwork-derived backgrounds, spatial audio, synchronized lyrics, and full queue management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
