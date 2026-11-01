@@ -282,12 +282,14 @@ fun NowPlayingScreen(
                     .border(0.9.dp, GlassBorderSubtle, RoundedCornerShape(20.dp))
             ) {
                 Crossfade(
-                    targetState = song.artworkRes,
+                    targetState = song.artworkModel,
                     animationSpec = tween(420),
                     label = "now_playing_artwork_crossfade"
-                ) { artRes ->
+                ) { artModel ->
                     AsyncImage(
-                        model = artRes,
+                        model = artModel,
+                        placeholder = painterResource(song.artworkRes),
+                        error = painterResource(song.artworkRes),
                         contentDescription = song.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -619,6 +621,7 @@ fun PlaylistDetailScreen(
     val updatedLabel = playlist?.updatedLabel ?: "${album?.releaseYear ?: 2026} • LOSSLESS • DOLBY ATMOS"
     val description = album?.description ?: playlist?.description ?: ""
     val artworkRes = album?.artworkRes ?: playlist?.artworkRes ?: 0
+    val artworkModel = album?.artworkModel ?: playlist?.artworkModel ?: artworkRes
     val accentColor = album?.primaryColor ?: playlist?.primaryColor ?: ElectricBlue
 
     val tracks = remember(album, playlist, allSongs) {
@@ -725,7 +728,9 @@ fun PlaylistDetailScreen(
                             .border(0.9.dp, GlassBorderSubtle, RoundedCornerShape(18.dp))
                     ) {
                         AsyncImage(
-                            model = artworkRes,
+                            model = artworkModel,
+                            placeholder = if (artworkRes != 0) painterResource(artworkRes) else null,
+                            error = if (artworkRes != 0) painterResource(artworkRes) else null,
                             contentDescription = title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -933,7 +938,9 @@ fun LyricsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AsyncImage(
-                            model = song.artworkRes,
+                            model = song.artworkModel,
+                            placeholder = painterResource(song.artworkRes),
+                            error = painterResource(song.artworkRes),
                             contentDescription = song.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -1256,7 +1263,9 @@ fun QueueScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AsyncImage(
-                        model = currentSong.artworkRes,
+                        model = currentSong.artworkModel,
+                        placeholder = painterResource(currentSong.artworkRes),
+                        error = painterResource(currentSong.artworkRes),
                         contentDescription = currentSong.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -1339,7 +1348,9 @@ fun QueueScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             AsyncImage(
-                                model = song.artworkRes,
+                                model = song.artworkModel,
+                                placeholder = painterResource(song.artworkRes),
+                                error = painterResource(song.artworkRes),
                                 contentDescription = song.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -1654,7 +1665,9 @@ fun TrackOptionsOverlaySheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AsyncImage(
-                        model = song.artworkRes,
+                        model = song.artworkModel,
+                        placeholder = painterResource(song.artworkRes),
+                        error = painterResource(song.artworkRes),
                         contentDescription = song.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -2058,7 +2071,9 @@ fun AddToPlaylistModal(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AsyncImage(
-                            model = playlist.artworkRes,
+                            model = playlist.artworkModel,
+                            placeholder = painterResource(playlist.artworkRes),
+                            error = painterResource(playlist.artworkRes),
                             contentDescription = playlist.title,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier

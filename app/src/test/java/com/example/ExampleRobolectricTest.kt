@@ -92,7 +92,8 @@ class ExampleRobolectricTest {
         composeTestRule.onNodeWithText("Early Access").assertIsDisplayed()
 
         composeTestRule.onNodeWithTag("nav_tab_radio").performClick()
-        composeTestRule.onNodeWithText("Live Broadcasts").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("radio_station_3col_grid").assertIsDisplayed()
+        composeTestRule.onNodeWithText("On Air Now").assertIsDisplayed()
 
         composeTestRule.onNodeWithTag("nav_tab_library").performClick()
         composeTestRule.onNodeWithTag("library_screen_list")

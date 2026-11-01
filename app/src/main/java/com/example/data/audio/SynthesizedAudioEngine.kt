@@ -12,6 +12,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.media.MediaPlayer
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -28,15 +29,25 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Lightweight real-time ambient chord synthesizer using Android's AudioTrack API.
- * Produces warm, low-volume polyphonic pad harmonics matching each track's base frequency
- * and integrates Android AudioFocus management.
+ * Hybrid Real-Time Streaming & Audio Engine for ONYX MUSIC.
+ * - Streams real 320kbps AAC/MP4/MP3 online audio URLs via Android's [MediaPlayer] when `song.audioUrl` is present.
+ * - Supports pause, resume, accurate seeking (`seekTo`), real-time position queries (`getCurrentPositionSeconds`),
+ *   mute/unmute, and track completion callbacks.
+ * - Falls back gracefully in offline or headless unit test environments.
  */
 class SynthesizedAudioEngine(
     private val scope: CoroutineScope,
     private val context: Context? = null
 ) {
     private var audioJob: Job? = null
+    private var mediaPlayer: MediaPlayer? = null
+    @Volatile
+    private var isMediaPlayerPrepared: Boolean = false
+    @Volatile
+    private var shouldPlayWhenPrepared: Boolean = false
+    @Volatile
+    private var currentStreamUrl: String? = null
+
     @Volatile
     private var baseFrequency: Float = 220f
     @Volatile
@@ -57,7 +68,7 @@ class SynthesizedAudioEngine(
                     )
                     .setOnAudioFocusChangeListener { focusChange ->
                         if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-                            stop()
+                            pause()
                         }
                     }
                     .build()
@@ -76,6 +87,139 @@ class SynthesizedAudioEngine(
             }
         }
     }
+
+    /**
+     * Plays a [Song] using its live `audioUrl` stream via [MediaPlayer], or falls back if no stream URL exists.
+     */
+    fun playSong(
+        song: Song,
+        onPreparedDurationSec: ((Int) -> Unit)? = null,
+        onCompletion: (() -> Unit)? = null
+    ) {
+        val streamUrl = song.audioUrl?.takeIf { it.isNotBlank() }
+        if (streamUrl != null) {
+            playStreamUrl(
+                url = streamUrl,
+                fallbackFreqHz = song.baseFreqHz,
+                onPreparedDurationSec = onPreparedDurationSec,
+                onCompletion = onCompletion
+            )
+        } else {
+            releaseMediaPlayer()
+            start(song.baseFreqHz)
+        }
+    }
+
+    private fun playStreamUrl(
+        url: String,
+        fallbackFreqHz: Float,
+        onPreparedDurationSec: ((Int) -> Unit)?,
+        onCompletion: (() -> Unit)?
+    ) {
+        audioJob?.cancel()
+        audioJob = null
+        releaseMediaPlayer()
+
+        requestAudioFocus()
+        currentStreamUrl = url
+        shouldPlayWhenPrepared = true
+        isMediaPlayerPrepared = false
+
+        runCatching {
+            val mp = MediaPlayer()
+            mediaPlayer = mp
+            mp.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            val vol = if (isMuted) 0f else 1f
+            mp.setVolume(vol, vol)
+            mp.setDataSource(url)
+            mp.setOnPreparedListener { player ->
+                isMediaPlayerPrepared = true
+                val v = if (isMuted) 0f else 1f
+                runCatching { player.setVolume(v, v) }
+                val durMs = runCatching { player.duration }.getOrDefault(0)
+                if (durMs > 1000) {
+                    onPreparedDurationSec?.invoke(durMs / 1000)
+                }
+                if (shouldPlayWhenPrepared) {
+                    runCatching { player.start() }
+                }
+            }
+            mp.setOnCompletionListener {
+                if (isMediaPlayerPrepared) {
+                    onCompletion?.invoke()
+                }
+            }
+            mp.setOnErrorListener { _, _, _ ->
+                isMediaPlayerPrepared = false
+                true
+            }
+            mp.prepareAsync()
+        }.onFailure {
+            isMediaPlayerPrepared = false
+            start(fallbackFreqHz)
+        }
+    }
+
+    fun pause() {
+        shouldPlayWhenPrepared = false
+        audioJob?.cancel()
+        audioJob = null
+        runCatching {
+            val mp = mediaPlayer
+            if (mp != null && isMediaPlayerPrepared && mp.isPlaying) {
+                mp.pause()
+            }
+        }
+    }
+
+    fun resume(
+        song: Song,
+        onPreparedDurationSec: ((Int) -> Unit)? = null,
+        onCompletion: (() -> Unit)? = null
+    ) {
+        shouldPlayWhenPrepared = true
+        requestAudioFocus()
+        val streamUrl = song.audioUrl?.takeIf { it.isNotBlank() }
+        if (streamUrl != null) {
+            val mp = mediaPlayer
+            if (mp != null && currentStreamUrl == streamUrl && isMediaPlayerPrepared) {
+                runCatching {
+                    val v = if (isMuted) 0f else 1f
+                    mp.setVolume(v, v)
+                    mp.start()
+                    return
+                }
+            }
+            playSong(song, onPreparedDurationSec, onCompletion)
+        } else {
+            start(song.baseFreqHz)
+        }
+    }
+
+    fun seekTo(seconds: Int) {
+        runCatching {
+            val mp = mediaPlayer
+            if (mp != null && isMediaPlayerPrepared) {
+                mp.seekTo((seconds * 1000).coerceAtLeast(0))
+            }
+        }
+    }
+
+    fun getCurrentPositionSeconds(): Int? {
+        return runCatching {
+            val mp = mediaPlayer
+            if (mp != null && isMediaPlayerPrepared) {
+                (mp.currentPosition / 1000).coerceAtLeast(0)
+            } else null
+        }.getOrNull()
+    }
+
+    fun isStreamActive(): Boolean = mediaPlayer != null && isMediaPlayerPrepared
 
     fun start(freqHz: Float) {
         baseFrequency = freqHz
@@ -121,8 +265,8 @@ class SynthesizedAudioEngine(
 
                 while (isActive) {
                     val f1 = baseFrequency.toDouble()
-                    val f2 = f1 * 1.25 // Major third
-                    val f3 = f1 * 1.5  // Perfect fifth
+                    val f2 = f1 * 1.25
+                    val f3 = f1 * 1.5
                     val inc1 = 2.0 * PI * f1 / sampleRate
                     val inc2 = 2.0 * PI * f2 / sampleRate
                     val inc3 = 2.0 * PI * f3 / sampleRate
@@ -160,11 +304,31 @@ class SynthesizedAudioEngine(
 
     fun setMuted(muted: Boolean) {
         isMuted = muted
+        runCatching {
+            val v = if (muted) 0f else 1f
+            mediaPlayer?.setVolume(v, v)
+        }
+    }
+
+    private fun releaseMediaPlayer() {
+        shouldPlayWhenPrepared = false
+        isMediaPlayerPrepared = false
+        currentStreamUrl = null
+        val mp = mediaPlayer
+        mediaPlayer = null
+        if (mp != null) {
+            runCatching {
+                if (mp.isPlaying) mp.stop()
+            }
+            runCatching { mp.reset() }
+            runCatching { mp.release() }
+        }
     }
 
     fun stop() {
         audioJob?.cancel()
         audioJob = null
+        releaseMediaPlayer()
         abandonAudioFocus()
     }
 }
@@ -238,7 +402,6 @@ class AndroidAudioOutputManager(private val context: Context) {
 
         val deduplicated = routes.distinctBy { it.name }
         return if (deduplicated.isNotEmpty()) {
-            // Ensure "This Android Phone" is always listed if not already returned
             if (deduplicated.none { it.routeType == "PHONE" }) {
                 listOf(
                     AudioOutputRoute(
@@ -266,8 +429,6 @@ class AndroidAudioOutputManager(private val context: Context) {
 
 /**
  * Android System Media Notification Synchronizer.
- * Posts and updates a rich media notification showing the current track title,
- * artist, album, and artwork whenever notifications are permitted.
  */
 class OnyxMediaNotificationHelper(private val context: Context) {
     companion object {
@@ -307,7 +468,7 @@ class OnyxMediaNotificationHelper(private val context: Context) {
             }
 
             val artworkBitmap = BitmapFactory.decodeResource(context.resources, song.artworkRes)
-            val statusLabel = if (isPlaying) "Playing • Dolby Atmos Lossless" else "Paused • ${song.albumTitle}"
+            val statusLabel = if (isPlaying) "Playing • 320 kbps AAC Stream" else "Paused • ${song.albumTitle}"
 
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_monochrome)

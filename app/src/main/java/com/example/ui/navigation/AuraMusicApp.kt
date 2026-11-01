@@ -341,7 +341,8 @@ fun AuraMusicApp(
                             onPlayAlbum = { album -> musicViewModel.playAlbum(album) },
                             onSongClick = { song -> musicViewModel.playSong(song) },
                             onToggleFavorite = musicViewModel::toggleFavorite,
-                            onMoreOptionsClick = musicViewModel::openTrackOptions
+                            onMoreOptionsClick = musicViewModel::openTrackOptions,
+                            isSearchingOnline = uiState.isSearchingOnline
                         )
                     }
                 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -203,7 +204,9 @@ private fun StationGridSquareTile(
             .clickable(onClick = onClick)
     ) {
         AsyncImage(
-            model = station.artworkRes,
+            model = station.artworkModel,
+            placeholder = painterResource(station.artworkRes),
+            error = painterResource(station.artworkRes),
             contentDescription = titleOverlay,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -284,7 +287,9 @@ private fun OnAirBroadcastCard(
                 .border(0.6.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(14.dp))
         ) {
             AsyncImage(
-                model = station.artworkRes,
+                model = station.artworkModel,
+                placeholder = painterResource(station.artworkRes),
+                error = painterResource(station.artworkRes),
                 contentDescription = station.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -388,7 +393,9 @@ private fun CompactRadioStationTile(
                 .border(0.7.dp, GlassBorderSubtle, shape)
         ) {
             AsyncImage(
-                model = station.artworkRes,
+                model = station.artworkModel,
+                placeholder = painterResource(station.artworkRes),
+                error = painterResource(station.artworkRes),
                 contentDescription = station.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -456,7 +463,9 @@ private fun RadioStationCard(
             .clickable(onClick = onPlayClick)
     ) {
         AsyncImage(
-            model = station.artworkRes,
+            model = station.artworkModel,
+            placeholder = painterResource(station.artworkRes),
+            error = painterResource(station.artworkRes),
             contentDescription = station.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

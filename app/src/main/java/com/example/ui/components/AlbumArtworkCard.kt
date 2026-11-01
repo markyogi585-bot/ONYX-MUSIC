@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,7 +114,9 @@ fun AlbumArtworkCard(
                 .border(0.7.dp, auraColors.glassBorder.copy(alpha = 0.4f), cornerShape)
         ) {
             AsyncImage(
-                model = album.artworkRes,
+                model = album.artworkModel,
+                placeholder = painterResource(album.artworkRes),
+                error = painterResource(album.artworkRes),
                 contentDescription = "${album.title} by ${album.artist}",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -256,7 +259,9 @@ fun FeaturedAlbumHeroCard(
             .testTag("featured_hero_card_${album.id}")
     ) {
         AsyncImage(
-            model = album.artworkRes,
+            model = album.artworkModel,
+            placeholder = painterResource(album.artworkRes),
+            error = painterResource(album.artworkRes),
             contentDescription = album.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -412,7 +417,9 @@ fun PlaylistArtworkCard(
                 .border(0.7.dp, auraColors.glassBorder.copy(alpha = 0.4f), cornerShape)
         ) {
             AsyncImage(
-                model = playlist.artworkRes,
+                model = playlist.artworkModel,
+                placeholder = painterResource(playlist.artworkRes),
+                error = painterResource(playlist.artworkRes),
                 contentDescription = playlist.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -532,7 +539,9 @@ fun ArtistAvatarCard(
                 .border(0.8.dp, auraColors.glassBorder.copy(alpha = 0.45f), CircleShape)
         ) {
             AsyncImage(
-                model = artist.avatarRes,
+                model = artist.avatarModel,
+                placeholder = painterResource(artist.avatarRes),
+                error = painterResource(artist.avatarRes),
                 contentDescription = artist.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -157,7 +158,7 @@ fun LibraryScreen(
         modifier = modifier
             .fillMaxSize()
             .testTag("library_screen_list"),
-        contentPadding = PaddingValues(top = 104.dp, bottom = 188.dp)
+        contentPadding = PaddingValues(top = 92.dp, bottom = 188.dp)
     ) {
         // 1. Apple Music "Transfer Music" Promotional Card Banner
         if (showTransferBanner) {
@@ -165,11 +166,11 @@ fun LibraryScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 6.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .padding(horizontal = 20.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(auraColors.cardSurface)
-                        .border(0.75.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(18.dp))
-                        .padding(16.dp)
+                        .border(0.75.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(16.dp))
+                        .padding(12.dp)
                         .testTag("transfer_music_banner")
                 ) {
                     Row(
@@ -178,45 +179,46 @@ fun LibraryScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(ElectricBlue.copy(alpha = 0.16f))
-                                .border(0.75.dp, ElectricBlue.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                                .border(0.75.dp, ElectricBlue.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.SwapHoriz,
                                 contentDescription = null,
                                 tint = ElectricBlue,
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(14.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Transfer Music",
                                 color = auraColors.textPrimary,
                                 fontFamily = InterFontFamily,
-                                fontSize = 17.sp,
+                                fontSize = 15.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.2).sp
                             )
-                            Spacer(modifier = Modifier.height(3.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Add music and playlists from other services to your Onyx Music library.",
                                 color = auraColors.textSecondary,
                                 fontFamily = InterFontFamily,
-                                fontSize = 13.5.sp,
-                                lineHeight = 18.sp
+                                fontSize = 12.5.sp,
+                                lineHeight = 16.sp,
+                                maxLines = 2
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "Get Started",
                                 color = ElectricBlue,
                                 fontFamily = InterFontFamily,
-                                fontSize = 14.5.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier
                                     .clickable {
@@ -230,19 +232,19 @@ fun LibraryScreen(
                         IconButton(
                             onClick = { showTransferBanner = false },
                             modifier = Modifier
-                                .size(28.dp)
+                                .size(24.dp)
                                 .testTag("transfer_music_dismiss")
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Dismiss transfer banner",
                                 tint = auraColors.textSecondary,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
             }
         }
 
@@ -261,7 +263,7 @@ fun LibraryScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp),
+                                .height(44.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -270,14 +272,14 @@ fun LibraryScreen(
                                     imageVector = category.icon,
                                     contentDescription = category.title,
                                     tint = ElectricBlue,
-                                    modifier = Modifier.size(28.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Spacer(modifier = Modifier.width(14.dp))
                                 Text(
                                     text = category.title,
                                     color = if (isSelected) ElectricBlue else auraColors.textPrimary,
                                     fontFamily = InterFontFamily,
-                                    fontSize = 19.5.sp,
+                                    fontSize = 17.5.sp,
                                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                                     letterSpacing = (-0.25).sp
                                 )
@@ -287,18 +289,18 @@ fun LibraryScreen(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = null,
                                 tint = auraColors.textSecondary,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         HorizontalDivider(
-                            modifier = Modifier.padding(start = 44.dp),
+                            modifier = Modifier.padding(start = 38.dp),
                             thickness = 0.6.dp,
                             color = auraColors.divider
                         )
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         // 3. Interactive Sort Chips Bar
@@ -387,7 +389,9 @@ fun LibraryScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             AsyncImage(
-                                model = artist.avatarRes,
+                                model = artist.avatarModel,
+                                placeholder = painterResource(artist.avatarRes),
+                                error = painterResource(artist.avatarRes),
                                 contentDescription = artist.name,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier

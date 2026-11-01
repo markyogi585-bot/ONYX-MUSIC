@@ -21,12 +21,15 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -43,6 +46,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -86,6 +90,7 @@ fun SearchScreen(
     onSongClick: (Song) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onMoreOptionsClick: (Song) -> Unit,
+    isSearchingOnline: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val auraColors = LocalAuraColors.current
@@ -148,6 +153,14 @@ fun SearchScreen(
                             value = searchQuery,
                             onValueChange = onQueryChange,
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(
+                                onSearch = {
+                                    if (searchQuery.isNotBlank()) {
+                                        onSubmitSearchTerm(searchQuery)
+                                    }
+                                }
+                            ),
                             textStyle = TextStyle(
                                 color = auraColors.textPrimary,
                                 fontFamily = InterFontFamily,
@@ -158,6 +171,15 @@ fun SearchScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("search_text_input")
+                        )
+                    }
+                    if (isSearchingOnline) {
+                        CircularProgressIndicator(
+                            color = ElectricBlue,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 4.dp)
                         )
                     }
                     if (searchQuery.isNotEmpty() || selectedCategory != null) {
@@ -194,7 +216,11 @@ fun SearchScreen(
             item(key = "search_results_header") {
                 MusicSectionHeader(
                     title = if (selectedCategory != null) selectedCategory else "Top Results",
-                    subtitle = "${searchResultAlbums.size} albums • ${searchResultSongs.size} songs"
+                    subtitle = if (isSearchingOnline) {
+                        "Fetching live 320kbps tracks from Onyx Music API..."
+                    } else {
+                        "${searchResultAlbums.size} albums • ${searchResultSongs.size} songs"
+                    }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 if (searchResultAlbums.isNotEmpty()) {

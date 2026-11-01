@@ -71,8 +71,12 @@ data class Album(
     val isLossless: Boolean = true,
     val isSpatialAudio: Boolean = true,
     val badgeText: String? = null,
-    val description: String = ""
-)
+    val description: String = "",
+    val artworkUrl: String? = null
+) {
+    val artworkModel: Any
+        get() = artworkUrl?.takeIf { it.isNotBlank() } ?: artworkRes
+}
 
 data class Song(
     val id: String,
@@ -87,10 +91,15 @@ data class Song(
     val trackNumber: Int = 1,
     val baseFreqHz: Float = 220f,
     val synchronizedLyrics: List<LyricLine> = emptyList(),
-    val composer: String = "Kaelen Vance & Studio Ensemble",
+    val composer: String = "Studio Ensemble",
     val producer: String = "Onyx Spatial Mastering Lab",
-    val audioQualityLabel: String = "24-bit/192 kHz ALAC • Dolby Atmos"
+    val audioQualityLabel: String = "320 kbps AAC • Dolby Atmos Lossless",
+    val artworkUrl: String? = null,
+    val audioUrl: String? = null
 ) {
+    val artworkModel: Any
+        get() = artworkUrl?.takeIf { it.isNotBlank() } ?: artworkRes
+
     val formattedDuration: String
         get() {
             val mins = durationSeconds / 60
@@ -111,8 +120,12 @@ data class Playlist(
     @param:DrawableRes val artworkRes: Int,
     val primaryColor: Color,
     val secondaryColor: Color,
-    val songIds: List<String>
-)
+    val songIds: List<String>,
+    val artworkUrl: String? = null
+) {
+    val artworkModel: Any
+        get() = artworkUrl?.takeIf { it.isNotBlank() } ?: artworkRes
+}
 
 data class RadioStation(
     val id: String,
@@ -124,8 +137,12 @@ data class RadioStation(
     @param:DrawableRes val artworkRes: Int,
     val primaryColor: Color,
     val secondaryColor: Color,
-    val featuredSongId: String
-)
+    val featuredSongId: String,
+    val artworkUrl: String? = null
+) {
+    val artworkModel: Any
+        get() = artworkUrl?.takeIf { it.isNotBlank() } ?: artworkRes
+}
 
 data class ArtistProfile(
     val id: String,
@@ -134,8 +151,12 @@ data class ArtistProfile(
     val monthlyListeners: String,
     @param:DrawableRes val avatarRes: Int,
     val accentColor: Color,
-    val topAlbumId: String
-)
+    val topAlbumId: String,
+    val avatarUrl: String? = null
+) {
+    val avatarModel: Any
+        get() = avatarUrl?.takeIf { it.isNotBlank() } ?: avatarRes
+}
 
 data class UserProfile(
     val displayName: String,

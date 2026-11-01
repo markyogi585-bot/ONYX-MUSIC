@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -129,7 +130,9 @@ fun FloatingGlassMiniPlayer(
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
-                                model = currentSong.artworkRes,
+                                model = currentSong.artworkModel,
+                                placeholder = painterResource(currentSong.artworkRes),
+                                error = painterResource(currentSong.artworkRes),
                                 contentDescription = currentSong.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()

@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,7 +86,9 @@ fun MusicListItem(
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
-                    model = song.artworkRes,
+                    model = song.artworkModel,
+                    placeholder = painterResource(song.artworkRes),
+                    error = painterResource(song.artworkRes),
                     contentDescription = song.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
