@@ -1,10 +1,19 @@
 # 🎵 Onyx Music (`Aura Music`) — AI-Powered Spatial Audio, Live JioSaavn Streaming & Firebase Cloud Platform
 
+### 📱 Live Streaming Emulator Screenshots (Real Android Captures)
+
 <p align="center">
-  <img src="screenshots/01_now_playing_kesariya.png" width="23%" alt="Now Playing - Kesariya" />
-  <img src="screenshots/02_now_playing_goat.png" width="23%" alt="Now Playing - G.O.A.T. Diljit Dosanjh" />
-  <img src="screenshots/03_synced_lyrics_dhurandhar.png" width="23%" alt="AI Time-Synced Lyrics - Dhurandhar" />
-  <img src="screenshots/04_player_seekbar_spatial.png" width="23%" alt="Spatial Audio & Hardware Output" />
+  <img src="screenshots/01_home_screen.png" width="24%" alt="01 Home Screen - Top Picks & Recently Played" />
+  <img src="screenshots/02_new_releases.png" width="24%" alt="02 New Tab - Early Access & Best New Songs" />
+  <img src="screenshots/03_live_radio.png" width="24%" alt="03 Radio Tab - On Air Now & Global Stations" />
+  <img src="screenshots/04_library_folders.png" width="24%" alt="04 Library Tab - Playlists, Folders & Downloads" />
+</p>
+
+<p align="center">
+  <img src="screenshots/05_player_playback.png" width="24%" alt="05 Now Playing Screen - 320kbps Dolby Atmos Audio" />
+  <img src="screenshots/03_synced_lyrics_dhurandhar.png" width="24%" alt="06 Time-Synced Bilingual Lyrics" />
+  <img src="screenshots/04_player_seekbar_spatial.png" width="24%" alt="07 Spatial Audio & Hardware Controls" />
+  <img src="screenshots/02_now_playing_goat.png" width="24%" alt="08 G.O.A.T. Lossless Playback" />
 </p>
 
 ---
